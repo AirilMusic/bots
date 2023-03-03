@@ -16,6 +16,8 @@ bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 bot.session = aiohttp.ClientSession()
 admin_channel = "valkyrie"
 
+script_directory = os.path.abspath(os.path.dirname(__file__))
+
 # Sistema de sanciones
 async def print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild):
     print("server_id:", server)
@@ -96,20 +98,6 @@ async def sancion(user_id, server, reason, chanel, member):
     await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild)
     
     sanciones_file.close()
- 
-# Config
-script_directory = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(script_directory, 'config.txt'), 'w') as config:
-    pass
-
-def check_sanciones(): # para que cualquier persona mire que sanciones tiene ella u otra persona
-    pass
-
-def clear_sanciones(): # mi spanglish es una maravilla XD
-    pass
-
-with open(os.path.join(script_directory, 'blacklist.txt'), 'w') as blacklist:
-    pass
 
 # turn on
 @bot.event
@@ -152,6 +140,28 @@ async def ban(ctx, user: discord.Member, reason: str):
         await chanel.send(f"[!] The user {user} has been penalized!\nReason: {reason}\nPenalization: ban")
         await chanel.send(f"[!] @valkyrie_admin The user {user} has been banned!")
 
+@bot.command()
+async def check_sanctions(ctx, user: discord.Member):
+    chanel_name = ctx.channel.name
+    chanel = discord.utils.get(bot.get_all_channels(), name=chanel_name)
+    server_id = ctx.guild.id
+    user_id = user.id
+    user_mention = f'<@{user_id}>'
+    try:
+        sanciones_file_path = os.path.join(script_directory, 'sanciones.txt')
+        with open(sanciones_file_path, 'r') as sanciones_file:
+            lsanciones = json.load(sanciones_file)
+            sanciones = lsanciones[str(server_id)][str(user_id)]
+            s = "\n"
+            for i in sanciones:
+                s += i + "\n"
+            l = len(sanciones)
+            await chanel.send(f"{user_mention} Has {l} sanctions:\n```{s}```")
+        sanciones_file.close()
+        
+    except:
+        await chanel.send(f"{user_mention} This user has not been sanctioned!")
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -171,7 +181,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# BUSCADLOS JEJE
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
