@@ -6,8 +6,11 @@ import asyncio
 import aiohttp
 
 import os
+import dotenv
 import datetime
 import json
+
+dotenv.load_dotenv()
 
 bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 bot.session = aiohttp.ClientSession()
@@ -15,76 +18,87 @@ admin_channel = "valkyrie"
 
 # Sistema de sanciones
 async def print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server):
-            chanel = discord.utils.get(bot.get_all_channels(), name=chanel)
-            user_mention = f'<@{user_id}>'
-            await chanel.send(f"[!] A penalty has been applied to you {user_mention}, you have {nsanc} penalties\nPenalization: {penalization}")
-            
-            chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
-            if chanel is not None:
-                await chanel.send(f"[!] The user {user_mention} has been penalized (penalties: {nsanc})\nReason: {reason}\nPenalization: {penalization}")
-                if nsanc >= 5:
-                    await chanel.send(f"[!] @valkyrie_admin The user {user_mention} has been banned because they have 5 penalties, reasons:\n```\n·{lsanciones[server][user_id][0]}\n·{lsanciones[server][user_id][1]}\n·{lsanciones[server][user_id][2]}\n·{lsanciones[server][user_id][3]}\n·{lsanciones[server][user_id][4]}")
+    chanel = discord.utils.get(bot.get_all_channels(), name=chanel)
+    user_mention = f'<@{user_id}>'
+    await chanel.send(f"[!] A penalty has been applied to you {user_mention}, you have {nsanc} penalties\nPenalization: {penalization}")
+    
+    chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
+    if chanel is not None:
+        await chanel.send(f"[!] The user {user_mention} has been penalized (penalties: {nsanc})\nReason: {reason}\nPenalization: {penalization}")
+        if nsanc >= 5:
+            await chanel.send(f"[!] @valkyrie_admin The user {user_mention} has been banned because they have 5 penalties, reasons:\n```\n·{lsanciones[str(server)][str(user_id)][0]}\n·{lsanciones[str(server)][str(user_id)][1]}\n·{lsanciones[str(server)][str(user_id)][2]}\n·{lsanciones[str(server)][str(user_id)][3]}\n·{lsanciones[str(server)][str(user_id)][4]}")
 
-async def ban_user(user_id, guild_id, reason, chanel, nsanc, penalization, lsanciones):
-    guild = bot.get_guild(guild_id)
-    user = await guild.fetch_member(user_id)
-    if user is not None:
-        await guild.ban(user, reason=reason)
-        await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, guild)
+async def ban_user(user_id, guild, reason, chanel, nsanc, penalization, lsanciones):
+    if user_id is not None:
+        member = await guild.fetch_member(user_id)
+        if member is not None:
+            await guild.ban(member, reason=reason)
+            await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, guild)
 
 async def timeout(user_id: int, stime: int, server):
-            guild = bot.get_guild(server)
-            member = guild.get_member(user_id)
-            if member is None:
-                return "Could not find member"
-            handshake = await timeout_user(user_id=user_id, guild_id=guild.user_id, until=stime)
-            if handshake:
-                return f"Successfully timed out user {member.display_name} for {stime} minutes."
-            return "Something went wrong"
+    guild = bot.get_guild(server)
+    if guild is None:
+        return "Could not find guild"
+    member = guild.get_member(str(user_id))
+    if member is None:
+        return "Could not find member"
+    handshake = await timeout_user(user_id=user_id, guild_id=guild.id, until=stime)
+    if handshake:
+        return f"Successfully timed out user {member.display_name} for {stime} minutes."
+    return "Something went wrong"
 
 async def sancion(user_id, server, reason, chanel):
-    with open(os.path.join(script_directory, 'sanciones.txt'), 'r+') as sanciones_file:
-        lsanciones = json.load(sanciones_file)
-        
-        if server not in lsanciones:
-            lsanciones[server] = {}
-        if user_id not in lsanciones[server]:
-            lsanciones[server][user_id] = []
-        
-        lsanciones[server][user_id].append(reason)
-        nsanc = len(lsanciones[server][user_id])
-        
-        penalization = ""
-        if nsanc == 1:
-            penalization = "An hour of timeout"
-            timeout(user_id, 60, server)
-        elif nsanc == 2:
-            penalization = "A day of timeout"
-            timeout(user_id, 1440, server)
-        elif nsanc == 3:
-            penalization = "Two days of timeout"
-            timeout(user_id, 2880, server)
-        elif nsanc == 4:
-            penalization = "A week of timeout"
-            timeout(user_id, 10080, server)
-        elif nsanc >= 5:
-            penalization = "Ban"
-        
-        print(f"[!] The user {user_id} has been penalized in {server}, reason: {reason}")
-        print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server)
-        
-        if nsanc >= 5:
-            ban_user(user_id, server, reason, chanel, nsanc, penalization, lsanciones)
-        
-        sanciones_file.seek(0)
-        sanciones_file.truncate()
+    guild = bot.get_guild(server)
+    if guild is None:
+        return "Could not find guild"
+    user_id2 = str(user_id)
+    server2 = str(server)
+    reason = str(reason)
+    chanel = str(chanel)
+    
+    sanciones_file_path = os.path.join(script_directory, 'sanciones.txt')
+
+    try:
+        with open(sanciones_file_path, 'r') as sanciones_file:
+            lsanciones = json.load(sanciones_file)
+    except FileNotFoundError:
+        lsanciones = {}
+
+    lsanciones.setdefault(server2, {}).setdefault(user_id2, [])
+    lsanciones[server2][user_id2].append(reason)
+    nsanc = len(lsanciones[server2][user_id2])
+
+    with open(sanciones_file_path, 'w') as sanciones_file:
         json.dump(lsanciones, sanciones_file)
+
+    penalization = ""
+    if nsanc == 1:
+        penalization = "An hour of timeout"
+        await timeout(user_id, 60, server)
+    elif nsanc == 2:
+        penalization = "A day of timeout"
+        await timeout(user_id, 1440, server)
+    elif nsanc == 3:
+        penalization = "Two days of timeout"
+        await timeout(user_id, 2880, server)
+    elif nsanc == 4:
+        penalization = "A week of timeout"
+        await timeout(user_id, 10080, server)
+    elif nsanc >= 5:
+        penalization = "Ban"
+
+    print(f"[!] The user {user_id2} has been penalized in {server2}, reason: {reason}")
+    await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server)
+
+    if nsanc >= 5:
+        await ban_user(user_id, guild, reason, chanel, nsanc, penalization, lsanciones)
+    
+    sanciones_file.close()
 
 # Config
 script_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(script_directory, 'config.txt'), 'w') as config:
     pass
-
 
 def check_sanciones(): # para que cualquier persona mire que sanciones tiene ella u otra persona
     pass
@@ -93,8 +107,6 @@ def clear_sanciones(): # mi spanglish es una maravilla XD
     pass
 
 with open(os.path.join(script_directory, 'blacklist.txt'), 'w') as blacklist:
-    #blacklist.write('Hola mundo!\n')
-    #blacklist.read()
     pass
 
 # turn on
@@ -123,15 +135,23 @@ async def ping(ctx):
 # sancionar a un usuario
 @bot.command()
 @commands.has_role('valkyrie_admin')
+async def penalize(ctx, user: discord.Member, reason: str):
+    user_id = user.id
+    server_id = ctx.guild.id
+    channel = ctx.channel.name
+    await sancion(user_id, server_id, reason, channel)
+    
+@bot.command()
+@commands.has_role('valkyrie_admin')
 async def ban(ctx, user: discord.Member, reason: str):
     await user.ban(reason=reason)
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     if chanel is not None:
-        await chanel.send(f"[!] The user {user} has been penalized!\nReason: {reason}\nPenalization: {reason}")
+        await chanel.send(f"[!] The user {user} has been penalized!\nReason: {reason}\nPenalization: ban")
         await chanel.send(f"[!] @valkyrie_admin The user {user} has been banned!")
 
 # Easter eggs
-"LOS BUSCAIS"
+# LOS BUSCAIS
 
 # Shut Down
 def signal_handler(sig, frame):
@@ -147,4 +167,4 @@ async def handle_signal(sig):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-bot.run('API KEY') # API KEY
+bot.run(os.getenv('DISCORD_TOKEN')) # API KEY
