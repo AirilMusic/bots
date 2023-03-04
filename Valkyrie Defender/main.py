@@ -18,6 +18,40 @@ admin_channel = "valkyrie"
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
 
+# blacklist
+async def add_to_blacklist(user_id, reason_list):
+    blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
+    if not os.path.exists(blacklist_file_path):
+        with open(blacklist_file_path, 'w') as f:
+            json.dump([], f)
+
+    with open(blacklist_file_path, 'r') as blacklist_file:
+        lblacklist = json.load(blacklist_file)
+        if user_id not in lblacklist:
+            lblacklist.append({user_id:reason_list})
+    
+    with open(blacklist_file_path, 'w') as blacklist_file:
+        json.dump(lblacklist, blacklist_file)
+    
+    blacklist_file.close()
+
+async def remove_from_blacklist(user_id):
+    blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
+    if not os.path.exists(blacklist_file_path):
+        return
+
+    with open(blacklist_file_path, 'r') as blacklist_file:
+        lblacklist = json.load(blacklist_file)
+        for i, user in enumerate(lblacklist):
+            if user_id in user:
+                del lblacklist[i]
+                break
+    
+    with open(blacklist_file_path, 'w') as blacklist_file:
+        json.dump(lblacklist, blacklist_file)
+    
+    blacklist_file.close()
+
 # Sistema de sanciones
 async def print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild):
     print("server_id:", server)
@@ -93,6 +127,7 @@ async def sancion(user_id, server, reason, chanel, member):
     elif nsanc >= 5:
         penalization = "Ban"
         await ban_user(user_id, guild, reason)
+        add_to_blacklist(user_id, lsanciones)
 
     print(f"[!] The user {user_id2} has been penalized in {server2}, reason: {reason}")
     await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild)
@@ -213,10 +248,8 @@ async def banned_users(ctx):
 async def unban(ctx, user: discord.User):
     await ctx.guild.unban(user)
     await ctx.send(f"{user.name} has been unbanned.")
+    await remove_from_blacklist(str(user.id))
     
-# blacklist
-# ...
-
 # help
 @bot.command()
 async def Help(ctx):
@@ -239,7 +272,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# A BUSCARLOS JEJE
+# BUSCADLOS UWU JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
