@@ -221,17 +221,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-@bot.command()
-async def airil(ctx):
-    await ctx.send("awa")
-
-@bot.command()
-async def ainhoa(ctx):
-    await ctx.send("no seas puta")
-    
-@bot.command()
-async def junni(ctx):
-    await ctx.send("ikxsdfszkñlfsDijokl")
+# A BUSCARLOS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
