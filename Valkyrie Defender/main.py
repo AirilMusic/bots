@@ -141,6 +141,22 @@ async def on_ready():
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
+
+@bot.event
+async def on_member_join(member):
+    admin_role = discord.utils.get(member.guild.roles, name="valkyrie_admin")
+    admin_role_id = admin_role.id
+    role_mention = f"<@&{admin_role_id}>"
+    blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
+    if os.path.exists(blacklist_file_path):
+        with open(blacklist_file_path, 'r') as blacklist_file:
+            blacklist = json.load(blacklist_file)
+            if str(member.id) in blacklist:
+                channel = discord.utils.get(member.guild.text_channels, name='valkyrie')
+                r = ""
+                for i in blacklist[str(member.id)]:
+                    r += "\n · " + str(i)
+                await channel.send(f"{role_mention} User {member.mention} has joined but is blacklisted.\nReasons:\n```{r}\n```")
         
 async def timeout_user(*, user_id: int, guild_id: int, until):
     headers = {"Authorization": f"Bot {bot.http.token}"}
