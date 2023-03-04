@@ -195,8 +195,25 @@ async def clear_sanctions(ctx, user: discord.Member):
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def banned_users(ctx):
-    pass
+    banned_users = []
+    banned_users_id = []
+    async for ban_entry in ctx.guild.bans():
+        banned_users.append(ban_entry.user.name)
+        banned_users_id.append(ban_entry.user.id)
+    if len(banned_users) > 0:
+        l = ""
+        for i, user_name in enumerate(banned_users):
+            l += f"\n · {user_name} : {banned_users_id[i]}"
+        await ctx.send(f"BANNED USERS:\n```{l}\n```")
+    else:
+        await ctx.send("There are no banned users!")
 
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def unban(ctx, user: discord.User):
+    await ctx.guild.unban(user)
+    await ctx.send(f"{user.name} has been unbanned.")
+    
 # blacklist
 # ...
 
@@ -218,6 +235,7 @@ async def Help(ctx):
                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
                    "\n*clear_sanctions @user: to clear all sanctions of a user"+
                    "\n*banned_users: it shows banned user list"+
+                   "\n*unban @user: for unban a user"+
                    "\n```"))
 
 # Easter eggs
