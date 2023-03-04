@@ -23,12 +23,15 @@ async def add_to_blacklist(user_id, reason_list):
     blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
     if not os.path.exists(blacklist_file_path):
         with open(blacklist_file_path, 'w') as f:
-            json.dump([], f)
+            json.dump({}, f)
 
     with open(blacklist_file_path, 'r') as blacklist_file:
         lblacklist = json.load(blacklist_file)
-        if user_id not in lblacklist:
-            lblacklist.append({user_id:reason_list})
+
+    for server_id, user_reasons in reason_list.items():
+        for user_id, reasons in user_reasons.items():
+            if user_id not in lblacklist:
+                lblacklist[user_id] = reasons
     
     with open(blacklist_file_path, 'w') as blacklist_file:
         json.dump(lblacklist, blacklist_file)
@@ -42,10 +45,8 @@ async def remove_from_blacklist(user_id):
 
     with open(blacklist_file_path, 'r') as blacklist_file:
         lblacklist = json.load(blacklist_file)
-        for i, user in enumerate(lblacklist):
-            if user_id in user:
-                del lblacklist[i]
-                break
+        if user_id in lblacklist:
+            del lblacklist[user_id]
     
     with open(blacklist_file_path, 'w') as blacklist_file:
         json.dump(lblacklist, blacklist_file)
@@ -127,7 +128,7 @@ async def sancion(user_id, server, reason, chanel, member):
     elif nsanc >= 5:
         penalization = "Ban"
         await ban_user(user_id, guild, reason)
-        add_to_blacklist(user_id, lsanciones)
+        await add_to_blacklist(user_id, lsanciones)
 
     print(f"[!] The user {user_id2} has been penalized in {server2}, reason: {reason}")
     await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild)
@@ -170,9 +171,14 @@ async def penalize(ctx, user: discord.Member, reason: str):
 async def ban(ctx, user: discord.Member, reason: str):
     await user.ban(reason=reason)
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
+    server = ctx.guild.id
+    guild = bot.get_guild(server)
+    admin_role = discord.utils.get(guild.roles, name="valkyrie_admin")
+    admin_role_id = admin_role.id
+    role_mention = f"<@&{admin_role_id}>"
     if chanel is not None:
         await chanel.send(f"[!] The user {user} has been penalized!\nReason: {reason}\nPenalization: ban")
-        await chanel.send(f"[!] @valkyrie_admin The user {user} has been banned!")
+        await chanel.send(f"[!] {role_mention} The user {user} has been banned!")
 
 @bot.command()
 async def check_sanctions(ctx, user: discord.Member):
@@ -246,9 +252,12 @@ async def banned_users(ctx):
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def unban(ctx, user: discord.User):
-    await ctx.guild.unban(user)
-    await ctx.send(f"{user.name} has been unbanned.")
-    await remove_from_blacklist(str(user.id))
+    try:
+        await ctx.guild.unban(user)
+        await ctx.send(f"{user.name} has been unbanned.")
+        await remove_from_blacklist(str(user.id))
+    except:
+        ctx.send("This user is not banned!")
     
 # help
 @bot.command()
@@ -272,7 +281,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# BUSCADLOS UWU JEJE
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
