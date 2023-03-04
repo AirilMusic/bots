@@ -96,7 +96,6 @@ async def sancion(user_id, server, reason, chanel, member):
 
     print(f"[!] The user {user_id2} has been penalized in {server2}, reason: {reason}")
     await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild)
-    
     sanciones_file.close()
 
 # turn on
@@ -122,7 +121,7 @@ async def timeout_user(*, user_id: int, guild_id: int, until):
 async def ping(ctx):
     await ctx.send("pong!")
     
-# sancionar a un usuario
+# sanciones
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def penalize(ctx, user: discord.Member, reason: str):
@@ -130,7 +129,7 @@ async def penalize(ctx, user: discord.Member, reason: str):
     server_id = ctx.guild.id
     channel = ctx.channel.name
     await sancion(user_id, server_id, reason, channel, user)
-    
+
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def ban(ctx, user: discord.Member, reason: str):
@@ -162,6 +161,45 @@ async def check_sanctions(ctx, user: discord.Member):
     except:
         await chanel.send(f"{user_mention} This user has not been sanctioned!")
 
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def clear_sanctions(ctx, user: discord.Member):
+    chanel_name = ctx.channel.name
+    chanel = discord.utils.get(bot.get_all_channels(), name=chanel_name)
+    server_id = ctx.guild.id
+    user_id = user.id
+    user_mention = f'<@{user_id}>'
+    
+    sanciones_file_path = os.path.join(script_directory, 'sanciones.txt')
+
+    if not os.path.exists(sanciones_file_path):
+        with open(sanciones_file_path, 'w') as f:
+            json.dump({}, f)
+
+    with open(sanciones_file_path, 'r') as sanciones_file:
+        lsanciones = json.load(sanciones_file)
+        
+        if str(server_id) in lsanciones:
+            if str(user_id) in lsanciones[str(server_id)]:
+                del lsanciones[str(server_id)][str(user_id)]
+                await chanel.send(f"{user_mention} sanctions have been removed!")
+                with open(sanciones_file_path, 'w') as sanciones_file:
+                    json.dump(lsanciones, sanciones_file)
+                    
+            else:
+                await chanel.send(f"{user_mention} is not sanctioned!")
+        else:
+            await chanel.send(f"{user_mention} is not sanctioned!")   
+    sanciones_file.close()
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def banned_users(ctx):
+    pass
+
+# blacklist
+# ...
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -178,10 +216,22 @@ async def Help(ctx):
                    "\nADMIN COMMANDS:"+
                    "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
+                   "\n*clear_sanctions @user: to clear all sanctions of a user"+
+                   "\n*banned_users: it shows banned user list"+
                    "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+@bot.command()
+async def airil(ctx):
+    await ctx.send("awa")
+
+@bot.command()
+async def ainhoa(ctx):
+    await ctx.send("no seas puta")
+    
+@bot.command()
+async def junni(ctx):
+    await ctx.send("ikxsdfszkñlfsDijokl")
 
 # Shut Down
 def signal_handler(sig, frame):
