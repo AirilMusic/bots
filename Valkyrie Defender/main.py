@@ -10,7 +10,7 @@ import dotenv
 import datetime
 import json
 
-dotenv.load_dotenv()
+dotenv.load_dotenv() # antes que nada, mi spanglish es una maravilla, ya lo se XD
 
 bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 bot.session = aiohttp.ClientSession()
@@ -280,7 +280,7 @@ async def unban(ctx, user: discord.User):
 async def Help(ctx):
     await ctx.send(str("When finished the bot, probably i'm going to upload a guide to: https://airilmusic.github.io"+
                    "\n\nCOMMAND LIST:"+
-                   "\n```\n*pin: to check if the bot is working "+
+                   "\n```\n*ping: to check if the bot is working "+
                    "\n*check_sanctions @user: see how many penalties a user has"+
                    "\n\nSANCTIONS:"+
                    "\n    1 --> An hour of timeout"+
@@ -297,7 +297,17 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+@bot.command()
+async def airil(ctx):
+    await ctx.send("awa")
+
+@bot.command()
+async def ainhoa(ctx):
+    await ctx.send("no seas puta")
+    
+@bot.command()
+async def junni(ctx):
+    await ctx.send("ikxsdfszkñlfsDijokl")
 
 # Shut Down
 def signal_handler(sig, frame):
