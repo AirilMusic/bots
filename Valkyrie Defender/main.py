@@ -168,12 +168,54 @@ async def timeout_user(*, user_id: int, guild_id: int, until):
             return True
         return False
 
+async def warn_user(ctx, user_id, server_id, reason, server, user, chanel):
+    guild = bot.get_guild(server_id)
+    if guild is None:
+        return "Could not find guild"
+    user_id2 = str(user_id)
+    server2 = str(server_id)
+    reason = str(reason)
+    chanel = str(chanel)
+    
+    warns_file_path = os.path.join(script_directory, 'warns.txt')
+
+    if not os.path.exists(warns_file_path):
+        with open(warns_file_path, 'w') as f:
+            json.dump({}, f)
+
+    with open(warns_file_path, 'r') as warns_file:
+        lwarns = json.load(warns_file)
+
+    lwarns.setdefault(server2, {}).setdefault(user_id2, [])
+    lwarns[server2][user_id2].append(reason)
+    nwarns = len(lwarns[server2][user_id2])
+
+    if nwarns == 3:
+        lwarns[server2].pop(user_id2, None)
+        await sancion(user_id, server, reason, chanel, user)
+    
+    with open(warns_file_path, 'w') as warns_file:
+        json.dump(lwarns, warns_file)
+    
+    user_mention = f'<@{user_id}>'
+    await ctx.send(f"{user_mention} you have been warned, reason:\n```\n{reason}\n```")
+    print(f"[!] The user {user_id2} has been warned in {server2}, reason: {reason}")
+    warns_file.close()
+
 # Comandos de prueba
 @bot.command()
 async def ping(ctx):
     await ctx.send("pong!")
     
 # sanciones
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def warn(ctx, user: discord.Member, reason: str):
+    user_id = user.id
+    server_id = ctx.guild.id
+    channel = ctx.channel.name
+    await warn_user(ctx, user_id, server_id, reason, server_id, user, channel)
+
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def penalize(ctx, user: discord.Member, reason: str):
@@ -289,6 +331,7 @@ async def Help(ctx):
                    "\n    4 --> A week of timeout"+
                    "\n    5 --> BAN, and this user will be added to a multiserver blacklist\n"+
                    "\nADMIN COMMANDS:"+
+                   "\n*warn @user reason: this is going to warn a user, 3 warns = 1 sanction"+
                    "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
                    "\n*clear_sanctions @user: to clear all sanctions of a user"+
@@ -297,17 +340,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-@bot.command()
-async def airil(ctx):
-    await ctx.send("awa")
-
-@bot.command()
-async def ainhoa(ctx):
-    await ctx.send("no seas puta")
-    
-@bot.command()
-async def junni(ctx):
-    await ctx.send("ikxsdfszkñlfsDijokl")
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
