@@ -1,14 +1,15 @@
-import discord
+import discord # pip install discord
 from discord.ext import commands
 
 import signal
-import asyncio
-import aiohttp
+import asyncio # pip install asyncio
+import aiohttp # pip install aiohttp
 
 import os
-import dotenv
+import dotenv # pip install python-dotenv
 import datetime
 import json
+import nacl # pip install pynacl
 
 dotenv.load_dotenv() # antes que nada, mi spanglish es una maravilla, ya lo se XD
 
@@ -316,7 +317,47 @@ async def unban(ctx, user: discord.User):
         await remove_from_blacklist(str(user.id))
     except:
         ctx.send("This user is not banned!")
+
+# expulsar de llamada
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def disconnect(ctx, user: discord.Member):
+    voice_state = user.voice
+
+    if voice_state:
+        voice_client = await voice_state.channel.connect()
+        await user.move_to(None)
+        await voice_client.disconnect()
+        await ctx.send(f'{user.display_name} has been disconnected!')
+    else:
+        await ctx.send(f'{user.display_name} is not on a voice call!')
+        
+# mute
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def mute(ctx, user: discord.Member):
+    await user.edit(mute=True, deafen=False)
+    await ctx.send(f"{user.mention} is muted.")
     
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def unmute(ctx, user: discord.Member):
+    await user.edit(mute=False, deafen=False)
+    await ctx.send(f"{user.mention} is unmuted, now he or she can speak in voice call!")
+    
+# deafen
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def deafen(ctx, user: discord.Member):
+    await user.edit(mute=False, deafen=True)
+    await ctx.send(f"{user.mention} is muted.")
+    
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def undeafen(ctx, user: discord.Member):
+    await user.edit(mute=False, deafen=False)
+    await ctx.send(f"{user.mention} is unmuted, now he or she can speak in voice call!")
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -337,6 +378,11 @@ async def Help(ctx):
                    "\n*clear_sanctions @user: to clear all sanctions of a user"+
                    "\n*banned_users: it shows banned user list"+
                    "\n*unban @user: for unban a user"+
+                   "\n*disconnect @user: for disconnect a user from a voice call"+
+                   "\n*mute @user"+
+                   "\n*unmute @user"+
+                   "\n*deafen @user"+
+                   "\n*undeafen @user"+
                    "\n```"))
 
 # Easter eggs
