@@ -358,13 +358,28 @@ async def undeafen(ctx, user: discord.Member):
     await user.edit(mute=False, deafen=False)
     await ctx.send(f"{user.mention} is unmuted, now he or she can speak in voice call!")
 
+# server info
+@bot.command()
+async def server_info(ctx):
+    server = ctx.guild
+
+    embed = discord.Embed(title=server.name, description="SERVER INFORMATION", color=0x00ff00)
+    embed.add_field(name="Server owner", value=server.owner.mention, inline=False)
+    embed.add_field(name="Number of members", value=server.member_count, inline=False)
+    embed.add_field(name="Roles", value=len(server.roles), inline=False)
+    embed.add_field(name="Number of boosts", value=server.premium_subscription_count, inline=False)
+    embed.add_field(name="Boost level", value=server.premium_tier, inline=False)
+
+    await ctx.send(embed=embed)
+
 # help
 @bot.command()
 async def Help(ctx):
     await ctx.send(str("When finished the bot, probably i'm going to upload a guide to: https://airilmusic.github.io"+
                    "\n\nCOMMAND LIST:"+
-                   "\n```\n*ping: to check if the bot is working "+
+                   "\n```\n*server_info: displays server information"+
                    "\n*check_sanctions @user: see how many penalties a user has"+
+                   "\n*ping: to check if the bot is working "+
                    "\n\nSANCTIONS:"+
                    "\n    1 --> An hour of timeout"+
                    "\n    2 --> A day of timeout"+
