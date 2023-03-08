@@ -364,8 +364,10 @@ async def server_info(ctx):
     server = ctx.guild
 
     embed = discord.Embed(title=server.name, description="SERVER INFORMATION", color=0x00ff00)
+    embed.add_field(name="Creation date", value=str(server.created_at.strftime("%d/%m/%Y")), inline=False)
     embed.add_field(name="Server owner", value=server.owner.mention, inline=False)
     embed.add_field(name="Number of members", value=server.member_count, inline=False)
+    embed.add_field(name="Online members", value=len([m for m in server.members if m.status != discord.Status.offline]), inline=False)
     embed.add_field(name="Roles", value=len(server.roles), inline=False)
     embed.add_field(name="Number of boosts", value=server.premium_subscription_count, inline=False)
     embed.add_field(name="Boost level", value=server.premium_tier, inline=False)
@@ -401,7 +403,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+# los busacaís jeje
 
 # Shut Down
 def signal_handler(sig, frame):
