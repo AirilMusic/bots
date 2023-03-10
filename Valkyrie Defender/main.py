@@ -18,9 +18,10 @@ bot.session = aiohttp.ClientSession()
 admin_channel = "valkyrie"
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
+config = {}
 
 # detectar informacion sensible
-bad_words = ["password", "user", "pass", "username", "usuario", "contraseña"]
+sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
 
 @bot.event
 async def on_message(message):
@@ -28,7 +29,7 @@ async def on_message(message):
         return
 
     if message.guild:
-        for word in bad_words:
+        for word in sensitive_words:
             if word in message.content.lower():
                 channel = discord.utils.get(message.guild.channels, name=admin_channel)
                 
@@ -40,7 +41,7 @@ async def on_message(message):
                     pass
                 
                 embed_message = discord.Embed(
-                    title=f"Message with possible sensitive information of {message.author.display_name} (react to delete it):",
+                    title=f"Message with possible sensitive information or phishing attempt by {message.author.display_name} (react to delete it):",
                     description=message.content,
                     color=0xFF0000,
                     timestamp=datetime.datetime.utcnow()
