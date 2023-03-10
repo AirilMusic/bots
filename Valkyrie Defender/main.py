@@ -34,11 +34,49 @@ def save_config(config):
     with open(config_file_path, 'w') as config_file:
         json.dump(config, config_file)
 
+config = load_config()
+
+# config badwords
+@bot.command()
+async def show_badwords(ctx):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    if server_id in config and config[server_id]["badwords"]:
+        badwords = '\n'.join(config[server_id]["badwords"])
+        embed = discord.Embed(title=f"Server '{ctx.guild.name}' badwords:", description=badwords, color=discord.Color.blue())
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(f"There are no badwords in '{ctx.guild.name}' server.")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def add_badword(ctx, word: str):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    if server_id not in config:
+        config[server_id] = {"badwords":[], "ban_blacklisted_users":False, "user_verification":False}
+    config[server_id]["badwords"].append(word.lower())
+    save_config(config)
+    await ctx.send(f"The badword: '{word}' has been added to the server '{ctx.guild.name}' badwords list.")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def remove_badword(ctx, word: str):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    if server_id in config and word.lower() in config[server_id]["badwords"]:
+        config[server_id]["badwords"].remove(word.lower())
+        save_config(config)
+        await ctx.send(f"'{word}' badword has been removed from '{ctx.guild.name}' server.")
+    else:
+        await ctx.send(f"'{word}' is not a badword in '{ctx.guild.name}' server.")
+
 # detectar informacion sensible y badwords
 sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
 
 @bot.event
 async def on_message(message):
+    config = load_config()
     if message.author.bot:
         return
 
@@ -52,10 +90,13 @@ async def on_message(message):
     # check if any badword is present in the message
     for word in badwords:
         if word in message.content.lower():
+            author_roles = [r.name for r in message.author.roles]
+            if 'valkyrie_admin' in author_roles:
+                break
             await message.delete()
             channel = discord.utils.get(message.guild.channels, name=admin_channel)
             await channel.send(f"The message from {message.author.mention} has been deleted for containing a forbidden word in this server: {word}")
-            await warn_user(channel, message.author.id, message.guild.id, f"Use of forbidden word: {word}", message.guild.name, message.author.name, channel.name)
+            await warn_user(channel, message.author.id, message.guild.id, f"Message contained forbidden word: {word}", message.guild.name, message.author.name, channel.name)
             return
 
     # sensitive words check
@@ -238,7 +279,6 @@ async def on_ready():
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
-config = load_config()
 
 # bienvenida y check blacklist
 @bot.event
@@ -480,38 +520,6 @@ async def server_info(ctx):
 async def delete(ctx, x: int):
     await ctx.channel.purge(limit=x+1)
 
-# config badwords
-@bot.command()
-async def show_badwords(ctx):
-    server_id = str(ctx.guild.id)
-    if server_id in config and config[server_id]["badwords"]:
-        badwords = '\n'.join(config[server_id]["badwords"])
-        embed = discord.Embed(title=f"Server '{ctx.guild.name}' badwords:", description=badwords, color=discord.Color.blue())
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send(f"There are no badwords in '{ctx.guild.name}' server.")
-
-@bot.command()
-@commands.has_role('valkyrie_admin')
-async def add_badword(ctx, word: str):
-    server_id = str(ctx.guild.id)
-    if server_id not in config:
-        config[server_id] = {"badwords":[], "ban_blacklisted_users":False, "user_verification":False}
-    config[server_id]["badwords"].append(word.lower())
-    save_config(config)
-    await ctx.send(f"The badword: '{word}' has been added to the server '{ctx.guild.name}' badwords list.")
-
-@bot.command()
-@commands.has_role('valkyrie_admin')
-async def remove_badword(ctx, word: str):
-    server_id = str(ctx.guild.id)
-    if server_id in config and word.lower() in config[server_id]["badwords"]:
-        config[server_id]["badwords"].remove(word.lower())
-        save_config(config)
-        await ctx.send(f"'{word}' badword has been removed from '{ctx.guild.name}' server.")
-    else:
-        await ctx.send(f"'{word}' is not a badword in '{ctx.guild.name}' server.")
-
 # help
 @bot.command()
 async def Help(ctx):
@@ -545,7 +553,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+# BUSCADLOS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
