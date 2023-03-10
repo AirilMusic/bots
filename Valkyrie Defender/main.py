@@ -19,6 +19,69 @@ admin_channel = "valkyrie"
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
 
+# detectar informacion sensible
+bad_words = ["password", "user", "pass", "username", "usuario", "contraseña"]
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if message.guild:
+        for word in bad_words:
+            if word in message.content.lower():
+                channel = discord.utils.get(message.guild.channels, name=admin_channel)
+                
+                try:
+                    admin_role = discord.utils.get(message.guild.roles, name="valkyrie_admin")
+                    role_mention = admin_role.mention
+                    await channel.send(f"{role_mention}")
+                except:
+                    pass
+                
+                embed_message = discord.Embed(
+                    title=f"Message with possible sensitive information of {message.author.display_name} (react to delete it):",
+                    description=message.content,
+                    color=0xFF0000,
+                    timestamp=datetime.datetime.utcnow()
+                )
+                
+                embed_message.set_footer(text="Message send at")
+
+                bot_message = await channel.send(embed=embed_message)
+                await bot_message.add_reaction("👍")
+                await bot_message.add_reaction("👎")
+
+                def check(reaction, user):
+                    return str(reaction.emoji) in ['👍', '👎'] and user == message.author and reaction.message.id == bot_message.id
+
+                try:
+                    reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+                except asyncio.TimeoutError:
+                    await bot_message.delete()
+                else:
+                    if str(reaction.emoji) == "👍":
+                        try:
+                            await message.delete()
+                            await bot_message.delete()
+                        except:
+                            pass
+                    else:
+                        await bot_message.delete()
+                return
+    await bot.process_commands(message)
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
+    if reaction.message.channel.name != admin_channel:
+        return
+    if str(reaction.emoji) == "👍":
+        await reaction.message.channel.purge(limit=2)
+    elif str(reaction.emoji) == "👎":
+        await reaction.message.channel.purge(limit=2)
+
 # blacklist
 async def add_to_blacklist(user_id, reason_list):
     blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
@@ -135,6 +198,7 @@ async def sancion(user_id, server, reason, chanel, member):
     await print_sanction(chanel, user_id, reason, nsanc, penalization, lsanciones, server, guild)
     sanciones_file.close()
 
+# eventos
 # turn on
 @bot.event
 async def on_ready():
@@ -143,6 +207,7 @@ async def on_ready():
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
 
+# bienvenida y check blacklist
 @bot.event
 async def on_member_join(member):
     admin_role = discord.utils.get(member.guild.roles, name="valkyrie_admin")
@@ -158,7 +223,8 @@ async def on_member_join(member):
                 for i in blacklist[str(member.id)]:
                     r += "\n · " + str(i)
                 await channel.send(f"{role_mention} User {member.mention} has joined but is blacklisted.\nReasons:\n```{r}\n```")
-        
+
+# timeout     
 async def timeout_user(*, user_id: int, guild_id: int, until):
     headers = {"Authorization": f"Bot {bot.http.token}"}
     url = f"https://discord.com/api/v9/guilds/{guild_id}/members/{user_id}"
@@ -169,6 +235,7 @@ async def timeout_user(*, user_id: int, guild_id: int, until):
             return True
         return False
 
+# warn
 async def warn_user(ctx, user_id, server_id, reason, server, user, chanel):
     guild = bot.get_guild(server_id)
     if guild is None:
@@ -374,6 +441,12 @@ async def server_info(ctx):
 
     await ctx.send(embed=embed)
 
+# delete mesages
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def delete(ctx, x: int):
+    await ctx.channel.purge(limit=x+1)
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -389,6 +462,7 @@ async def Help(ctx):
                    "\n    4 --> A week of timeout"+
                    "\n    5 --> BAN, and this user will be added to a multiserver blacklist\n"+
                    "\nADMIN COMMANDS:"+
+                   "\n*delete (num): delete last (num) messages"
                    "\n*warn @user reason: this is going to warn a user, 3 warns = 1 sanction"+
                    "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
@@ -403,7 +477,7 @@ async def Help(ctx):
                    "\n```"))
 
 # Easter eggs
-# los busacaís jeje
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
