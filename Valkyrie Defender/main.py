@@ -20,6 +20,20 @@ admin_channel = "valkyrie"
 script_directory = os.path.abspath(os.path.dirname(__file__))
 config = {}
 
+# config file
+def load_config():
+    config_file_path = os.path.join(script_directory, 'config.txt')
+    if not os.path.exists(config_file_path):
+        with open(config_file_path, 'w') as f:
+            json.dump({}, f)
+    with open(config_file_path, 'r') as config_file:
+        return json.load(config_file)
+
+def save_config(config):
+    config_file_path = os.path.join(script_directory, 'config.txt')
+    with open(config_file_path, 'w') as config_file:
+        json.dump(config, config_file)
+
 # detectar informacion sensible
 sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
 
@@ -207,6 +221,7 @@ async def on_ready():
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
+    config = load_config()
 
 # bienvenida y check blacklist
 @bot.event
@@ -448,34 +463,69 @@ async def server_info(ctx):
 async def delete(ctx, x: int):
     await ctx.channel.purge(limit=x+1)
 
+# config badwords
+@bot.command()
+async def show_badwords(ctx):
+    server_id = str(ctx.guild.id)
+    if server_id in config and config[server_id]["badwords"]:
+        badwords = '\n'.join(config[server_id]["badwords"])
+        embed = discord.Embed(title=f"Server '{ctx.guild.name}' badwords:", description=badwords, color=discord.Color.blue())
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(f"There are no badwords in '{ctx.guild.name}' server.")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def add_badword(ctx, word: str):
+    server_id = str(ctx.guild.id)
+    if server_id not in config:
+        config[server_id] = {"badwords":[], "ban_blacklisted_users":False, "user_verification":False}
+    config[server_id]["badwords"].append(word.lower())
+    save_config(config)
+    await ctx.send(f"The badword: '{word}' has been added to the server '{ctx.guild.name}' badwords list.")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def remove_badword(ctx, word: str):
+    server_id = str(ctx.guild.id)
+    if server_id in config and word.lower() in config[server_id]["badwords"]:
+        config[server_id]["badwords"].remove(word.lower())
+        save_config(config)
+        await ctx.send(f"'{word}' badword has been removed from '{ctx.guild.name}' server.")
+    else:
+        await ctx.send(f"'{word}' is not a badword in '{ctx.guild.name}' server.")
+
 # help
 @bot.command()
 async def Help(ctx):
     await ctx.send(str("When finished the bot, probably i'm going to upload a guide to: https://airilmusic.github.io"+
-                   "\n\nCOMMAND LIST:"+
-                   "\n```\n*server_info: displays server information"+
-                   "\n*check_sanctions @user: see how many penalties a user has"+
-                   "\n*ping: to check if the bot is working "+
-                   "\n\nSANCTIONS:"+
-                   "\n    1 --> An hour of timeout"+
-                   "\n    2 --> A day of timeout"+
-                   "\n    3 --> Two days of timeout"+
-                   "\n    4 --> A week of timeout"+
-                   "\n    5 --> BAN, and this user will be added to a multiserver blacklist\n"+
-                   "\nADMIN COMMANDS:"+
-                   "\n*delete (num): delete last (num) messages"
-                   "\n*warn @user reason: this is going to warn a user, 3 warns = 1 sanction"+
-                   "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
-                   "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
-                   "\n*clear_sanctions @user: to clear all sanctions of a user"+
-                   "\n*banned_users: it shows banned user list"+
-                   "\n*unban @user: for unban a user"+
-                   "\n*disconnect @user: for disconnect a user from a voice call"+
-                   "\n*mute @user"+
-                   "\n*unmute @user"+
-                   "\n*deafen @user"+
-                   "\n*undeafen @user"+
-                   "\n```"))
+                    "\n\nCOMMAND LIST:"+
+                    "\n```\n*server_info: displays server information"+
+                    "\n*check_sanctions @user: see how many penalties a user has"+
+                    "\n*show_badwords: to see server sancioned words list"+
+                    "\n*ping: to check if the bot is working "+
+                    "\n\nSANCTIONS:"+
+                    "\n    1 --> An hour of timeout"+
+                    "\n    2 --> A day of timeout"+
+                    "\n    3 --> Two days of timeout"+
+                    "\n    4 --> A week of timeout"+
+                    "\n    5 --> BAN, and this user will be added to a multiserver blacklist\n"+
+                    "\nADMIN COMMANDS:"+
+                    "\n*delete (num): delete last (num) messages"
+                    "\n\n*warn @user reason: this is going to warn a user, 3 warns = 1 sanction"+
+                    "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
+                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
+                    "\n*clear_sanctions @user: to clear all sanctions of a user"+
+                    "\n*banned_users: it shows banned user list"+
+                    "\n*unban @user: for unban a user"+
+                    "\n\n*disconnect @user: for disconnect a user from a voice call"+
+                    "\n*mute @user"+
+                    "\n*unmute @user"+
+                    "\n*deafen @user"+
+                    "\n*undeafen @user"+
+                    "\n\n*add_badword (word): to add a sanctioned word to the server config"+
+                    "\n*remove_badword (word): to remove a word to the sanctioned words list"+
+                    "\n```"))
 
 # Easter eggs
 # LOS BUSCAIS JEJE
