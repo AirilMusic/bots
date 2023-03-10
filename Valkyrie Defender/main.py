@@ -34,7 +34,7 @@ def save_config(config):
     with open(config_file_path, 'w') as config_file:
         json.dump(config, config_file)
 
-# detectar informacion sensible
+# detectar informacion sensible y badwords
 sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
 
 @bot.event
@@ -42,6 +42,23 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    # get badwords list for the current server
+    server_id = str(message.guild.id)
+    if server_id in config:
+        badwords = config[server_id]['badwords']
+    else:
+        badwords = []
+
+    # check if any badword is present in the message
+    for word in badwords:
+        if word in message.content.lower():
+            await message.delete()
+            channel = discord.utils.get(message.guild.channels, name=admin_channel)
+            await channel.send(f"The message from {message.author.mention} has been deleted for containing a forbidden word in this server: {word}")
+            await warn_user(channel, message.author.id, message.guild.id, f"Use of forbidden word: {word}", message.guild.name, message.author.name, channel.name)
+            return
+
+    # sensitive words check
     if message.guild:
         for word in sensitive_words:
             if word in message.content.lower():
@@ -221,7 +238,7 @@ async def on_ready():
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
-    config = load_config()
+config = load_config()
 
 # bienvenida y check blacklist
 @bot.event
