@@ -553,6 +553,44 @@ async def member_info(ctx, user: discord.Member):
 async def delete(ctx, x: int):
     await ctx.channel.purge(limit=x+1)
 
+# turn on/off ban blacklisted users
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def ban_blacklisted_ON(ctx):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    config[server_id]["ban_blacklisted_users"] = True
+    save_config(config)
+    await ctx.send(f"Automatic banning has been activated for new blacklisted users!")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def ban_blacklisted_OFF(ctx):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    config[server_id]["ban_blacklisted_users"] = False
+    save_config(config)
+    await ctx.send(f"Automatic banning has been disabled for new blacklisted users!")
+
+# turn on/off new users verification
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def new_member_verification_ON(ctx):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    config[server_id]["user_verification"] = True
+    save_config(config)
+    await ctx.send(f"Automatic banning has been activated for new blacklisted users!")
+
+@bot.command()
+@commands.has_role('valkyrie_admin')
+async def new_member_verification_OFF(ctx):
+    config = load_config()
+    server_id = str(ctx.guild.id)
+    config[server_id]["user_verification"] = False
+    save_config(config)
+    await ctx.send(f"Automatic banning has been disabled for new blacklisted users!")
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -584,6 +622,10 @@ async def Help(ctx):
                     "\n*undeafen @user"+
                     "\n\n*add_badword (word): to add a sanctioned word to the server config"+
                     "\n*remove_badword (word): to remove a word to the sanctioned words list"+
+                    "\n\n*ban_blacklisted_ON: to automatically ban blacklisted users"+
+                    "\n*ban_blacklisted_OFF: to don't ban automatically blacklisted users"+
+                    "\n\n*new_member_verification_ON: to put a verification for new members"+
+                    "\n*new_member_verification_OFF: ro remove verification for new members"+
                     "\n```"))
 
 # Easter eggs
