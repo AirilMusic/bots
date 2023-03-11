@@ -94,6 +94,7 @@ def is_nsfw(image_url):
     r = requests.post('https://api.sightengine.com/1.0/check.json', files=files, data=params)
 
     output = json.loads(r.text)
+    print(output)
     return output['nudity']['none'] < 0.5
 
 @bot.event
@@ -193,15 +194,18 @@ async def on_message(message):
 
     # Comprobar si el mensaje tiene una imagen nsfw
     if len(message.attachments) > 0:
-        image_url = message.attachments[0].url
-        if is_nsfw(image_url):
-            # Check if the channel is not NSFW y si el user tiene role 'valkyrie_admin'
-            if not message.channel.is_nsfw():
-                if 'valkyrie_admin' not in [role.name for role in message.author.roles]:
-                    await message.delete()
-                    await message.channel.send("You cannot send NSFW photos through a channel that is not meant for it!")
-
-    # Verificar si el mensaje contiene una URL maliciosa
+        try:
+            image_url = message.attachments[0].url
+            if is_nsfw(image_url):
+                # Check if the channel is not NSFW y si el user tiene role 'valkyrie_admin'
+                if not message.channel.is_nsfw():
+                    if 'valkyrie_admin' not in [role.name for role in message.author.roles]:
+                        await message.delete()
+                        await message.channel.send("You cannot send NSFW photos through a channel that is not meant for it!")
+        except:
+            pass # el archivo no es una foto
+        
+    # Verificar si el mensaje contiene una URL maliciosa o no
     if "http" in message.content:
         url = message.content.split(" ")[0]
         params = {"apikey": virus_total_key, "resource": url}
@@ -211,8 +215,27 @@ async def on_message(message):
             admin_role = discord.utils.get(message.guild.roles, name="valkyrie_admin")
             admin_role_id = admin_role.id
             role_mention = f"<@&{admin_role_id}>"
-            await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful content. Please be careful when sharing and clicking on links.")
-            
+            await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful content! Please be careful when sharing and clicking on links!")
+    
+    # Verificar si el mensaje contiene un archivo malicioso o no
+    if message.attachments:
+        try:
+            attachment = message.attachments[0]
+            file_content = await attachment.read()
+
+            params = {"apikey": virus_total_key}
+            files = {"file": file_content}
+            response = requests.post("https://www.virustotal.com/vtapi/v2/file/scan", params=params, files=files)
+
+            resource_id = response.json()["resource"]
+            params = {"apikey": os.getenv("VIRUS_TOTAL"), "resource": resource_id}
+            response = requests.get("https://www.virustotal.com/vtapi/v2/file/report", params=params)
+            print(response.json())
+            if response.json()["positives"] > 0:  
+                await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful files! Please be careful when downloading files!")
+        except:
+            pass # el archivo no es valido
+        
     await bot.process_commands(message)
 
 @bot.event
@@ -719,7 +742,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# A BUSCARLOS JEJE
+# A BUSCARLOS UWU JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
