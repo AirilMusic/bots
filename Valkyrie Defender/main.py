@@ -71,8 +71,10 @@ async def remove_badword(ctx, word: str):
     else:
         await ctx.send(f"'{word}' is not a badword in '{ctx.guild.name}' server.")
 
-# detectar informacion sensible y badwords
+# detectar informacion sensible y badwords, and spam locker
 sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
+
+message_counts = {}
 
 @bot.event
 async def on_message(message):
@@ -139,6 +141,23 @@ async def on_message(message):
                     if str(reaction.emoji) == "👍":
                         await message.delete()
                 return
+    
+    # lock spam
+    user_id = message.author.id
+    content = message.content.lower()
+    channel = message.channel
+
+    if content in message_counts and message_counts[content]["user_id"] == user_id:
+        message_counts[content]["count"] += 1
+    else:
+        message_counts[content] = {"user_id": user_id, "count": 1}
+
+    if message_counts[content]["count"] == 4:
+        await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
+    
+    if message_counts[content]["count"] == 5:
+        await sancion(user_id, message.guild.id, "spam", channel.name, message.author.id) #el ultimo parametro tiene que ser discord.Member .id
+
     await bot.process_commands(message)
 
 @bot.event
