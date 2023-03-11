@@ -17,6 +17,11 @@ bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 bot.session = aiohttp.ClientSession()
 admin_channel = "valkyrie"
 
+# Configuración de Sightengine, para la deteccion de imagenes nsfw
+sightengine_user = os.getenv("SIGHTENGINE_USER")
+sightengine_secret = os.getenv("SIGHTENGINE_SECRET")
+sightengine_url = "https://api.sightengine.com/1.0/check.json"
+
 script_directory = os.path.abspath(os.path.dirname(__file__))
 config = {}
 
@@ -145,18 +150,34 @@ async def on_message(message):
     # lock spam
     user_id = message.author.id
     content = message.content.lower()
+    server_id = message.guild.id
     channel = message.channel
-
-    if content in message_counts and message_counts[content]["user_id"] == user_id:
-        message_counts[content]["count"] += 1
-    else:
-        message_counts[content] = {"user_id": user_id, "count": 1}
-
-    if message_counts[content]["count"] == 4:
-        await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
     
-    if message_counts[content]["count"] == 5:
+
+    if server_id not in message_counts:
+        message_counts[server_id] = {}
+
+    if user_id not in message_counts[server_id]:
+        message_counts[server_id][user_id] = {
+            "last_message": None,
+            "count": 0
+        }
+
+    if content == message_counts[server_id][user_id]["last_message"]:
+        message_counts[server_id][user_id]["count"] += 1
+    else:
+        message_counts[server_id][user_id]["count"] = 1
+
+    message_counts[server_id][user_id]["last_message"] = content
+
+    if message_counts[server_id][user_id]["count"] == 4:
+        await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
+
+    if message_counts[server_id][user_id]["count"] == 5:
         await sancion(user_id, message.guild.id, "spam", channel.name, message.author)
+
+    # Comprobar si el mensaje tiene una imagen nsfw
+    
 
     await bot.process_commands(message)
 
