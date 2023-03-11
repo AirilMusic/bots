@@ -296,7 +296,7 @@ async def on_member_join(member):
                 for i in blacklist[str(member.id)]:
                     r += "\n · " + str(i)
                 await channel.send(f"{role_mention} User {member.mention} has joined but is blacklisted.\nReasons:\n```{r}\n```")
-
+                
 # timeout     
 async def timeout_user(*, user_id: int, guild_id: int, until):
     headers = {"Authorization": f"Bot {bot.http.token}"}
@@ -368,6 +368,7 @@ async def penalize(ctx, user: discord.Member, reason: str):
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def ban(ctx, user: discord.Member, reason: str):
+    user_id = user.id
     await user.ban(reason=reason)
     chanel = discord.utils.get(bot.get_all_channels(), name=admin_channel)
     server = ctx.guild.id
@@ -378,6 +379,22 @@ async def ban(ctx, user: discord.Member, reason: str):
     if chanel is not None:
         await chanel.send(f"[!] The user {user} has been penalized!\nReason: {reason}\nPenalization: ban")
         await chanel.send(f"[!] {role_mention} The user {user} has been banned!")
+    sanciones_file_path = os.path.join(script_directory, 'sanciones.txt')
+
+    user_id2 = str(user_id)
+    server2 = str(server)
+    reason = str(reason)
+    
+    if not os.path.exists(sanciones_file_path):
+        with open(sanciones_file_path, 'w') as f:
+            json.dump({}, f)
+
+    with open(sanciones_file_path, 'r') as sanciones_file:
+        lsanciones = json.load(sanciones_file)
+
+    lsanciones.setdefault(server2, {}).setdefault(user_id2, [])
+    lsanciones[server2][user_id2].append(reason)
+    await add_to_blacklist(user_id, lsanciones)
 
 @bot.command()
 async def check_sanctions(ctx, user: discord.Member):
@@ -553,7 +570,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# BUSCADLOS JEJE
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
