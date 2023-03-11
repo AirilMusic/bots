@@ -230,7 +230,6 @@ async def on_message(message):
             resource_id = response.json()["resource"]
             params = {"apikey": os.getenv("VIRUS_TOTAL"), "resource": resource_id}
             response = requests.get("https://www.virustotal.com/vtapi/v2/file/report", params=params)
-            print(response.json())
             if response.json()["positives"] > 0:  
                 await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful files! Please be careful when downloading files!")
         except:
