@@ -126,21 +126,15 @@ async def on_message(message):
                 await bot_message.add_reaction("👎")
 
                 def check(reaction, user):
-                    return str(reaction.emoji) in ['👍', '👎'] and user == message.author and reaction.message.id == bot_message.id
+                    return str(reaction.emoji) in ['👍', '👎'] and reaction.message.id == bot_message.id
 
                 try:
-                    reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+                    reaction, user = await bot.wait_for('reaction_add', check=check)
                 except asyncio.TimeoutError:
                     await bot_message.delete()
                 else:
                     if str(reaction.emoji) == "👍":
-                        try:
-                            await message.delete()
-                            await bot_message.delete()
-                        except:
-                            pass
-                    else:
-                        await bot_message.delete()
+                        await message.delete()
                 return
     await bot.process_commands(message)
 
