@@ -81,11 +81,14 @@ async def on_message(message):
         return
 
     # get badwords list for the current server
-    server_id = str(message.guild.id)
-    if server_id in config:
-        badwords = config[server_id]['badwords']
-    else:
-        badwords = []
+    try:
+        server_id = str(message.guild.id)
+        if server_id in config:
+            badwords = config[server_id]['badwords']
+        else:
+            badwords = []
+    except:
+        pass
 
     # check if any badword is present in the message
     for word in badwords:
@@ -274,7 +277,7 @@ async def on_ready():
     if chanel is not None:
         await chanel.send("[+] Valkyria Defender enabled")
 
-# bienvenida y check blacklist
+# bienvenida, check blacklist y verificacion
 @bot.event
 async def on_member_join(member):
     config = load_config()
@@ -295,6 +298,19 @@ async def on_member_join(member):
                 for i in blacklist[str(member.id)]:
                     r += "\n · " + str(i)
                 await channel.send(f"{role_mention} User {member.mention} has joined but is blacklisted.\nReasons:\n```{r}\n```")
+    
+    config = load_config()
+    server_id = str(member.guild.id)
+    if config[server_id]["user_verification"]:
+        await member.send("Welcome to the server. To verify your identity, type the command *verify")
+        try:
+            # da 60 segundos para responder
+            verification_command = await bot.wait_for('message', timeout=60.0, check=lambda message: message.author == member and message.content == '*verify')
+        except asyncio.TimeoutError:
+            await member.send("You did not verify your identity in time. Please try joining the server later!")
+            await member.kick(reason="The user's identity could not be verified in time.")
+        else:
+            await member.send("Your identity has been verified. Welcome to the server!")
                 
 # timeout     
 async def timeout_user(*, user_id: int, guild_id: int, until):
