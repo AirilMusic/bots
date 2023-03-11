@@ -156,7 +156,7 @@ async def on_message(message):
         await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
     
     if message_counts[content]["count"] == 5:
-        await sancion(user_id, message.guild.id, "spam", channel.name, message.author.id) #el ultimo parametro tiene que ser discord.Member .id
+        await sancion(user_id, message.guild.id, "spam", channel.name, message.author)
 
     await bot.process_commands(message)
 
@@ -664,7 +664,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+# A BUSCARLOS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
