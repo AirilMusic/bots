@@ -10,6 +10,7 @@ import dotenv # pip install python-dotenv
 import datetime
 import json
 import nacl # pip install pynacl
+import requests
 
 dotenv.load_dotenv() # antes que nada, mi spanglish es una maravilla, ya lo se XD
 
@@ -18,8 +19,8 @@ bot.session = aiohttp.ClientSession()
 admin_channel = "valkyrie"
 
 # Configuración de Sightengine, para la deteccion de imagenes nsfw
-sightengine_user = os.getenv("SIGHTENGINE_USER")
-sightengine_secret = os.getenv("SIGHTENGINE_SECRET")
+API_USER = os.getenv("SIGHTENGINE_USER")
+API_SECRET = os.getenv("SIGHTENGINE_SECRET")
 sightengine_url = "https://api.sightengine.com/1.0/check.json"
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
@@ -80,6 +81,19 @@ async def remove_badword(ctx, word: str):
 sensitive_words = ["password", "Password", "user", "User", "pass", "Pass", "username", "Username", "usuario", "Usuario", "contraseña", "Contraseña", "Nombre de usuario", "nombre de usuario", "Tarjeta de credito", "tarjeta de credito", "Credit card", "credit card", "Dirección", "dirección", "Direccion", "direccion", "Address", "address", "Fecha de nacimiento", "fecha de nacimiento", "Date of birth", "date of birth", "Teléfono", "Telefono", "telefono", "teléfono", "Phone number", "phone number", "Correo electronico", "Correo electrónico", "correo electrónico", "correo electronico", "gmail", "Gmail", "Email", "email", "Pasaporte", "pasaporte", "Passport", "passport", "Número de cuenta", "Numero de cuenta", "número de cuenta", "numero de cuenta", "Account number", "account number", "Nombre completo", "nombre completo", "Full name", "full name", "Dirección de facturación", "Direccion de facturacion", "dirección de facturación", "direccion de facturacion", "Billing address", "billing address", "DNI:", "dni:"]
 
 message_counts = {}
+
+# Function to check if an image is NSFW
+def is_nsfw(image_url):
+    params = {
+      'models': 'nudity-2.0',
+      'api_user': API_USER,
+      'api_secret': API_SECRET
+    }
+    files = {'media': requests.get(image_url).content}
+    r = requests.post('https://api.sightengine.com/1.0/check.json', files=files, data=params)
+
+    output = json.loads(r.text)
+    return output['nudity']['none'] < 0.5
 
 @bot.event
 async def on_message(message):
@@ -177,7 +191,14 @@ async def on_message(message):
         await sancion(user_id, message.guild.id, "spam", channel.name, message.author)
 
     # Comprobar si el mensaje tiene una imagen nsfw
-    
+    if len(message.attachments) > 0:
+        image_url = message.attachments[0].url
+        if is_nsfw(image_url):
+            # Check if the channel is not NSFW y si el user tiene role 'valkyrie_admin'
+            if not message.channel.is_nsfw():
+                if 'valkyrie_admin' not in [role.name for role in message.author.roles]:
+                    await message.delete()
+                    await message.channel.send("You cannot send NSFW photos through a channel that is not meant for it!")
 
     await bot.process_commands(message)
 
