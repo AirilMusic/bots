@@ -283,6 +283,11 @@ async def on_ready():
 # bienvenida y check blacklist
 @bot.event
 async def on_member_join(member):
+    config = load_config()
+    server_id = str(member.guild.id)
+    if server_id in config and config[server_id]['ban_blacklisted_users'] == True:
+        await ban_user(member.id, member.guild, "User was blacklisted")
+        return
     admin_role = discord.utils.get(member.guild.roles, name="valkyrie_admin")
     admin_role_id = admin_role.id
     role_mention = f"<@&{admin_role_id}>"
@@ -570,7 +575,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# LOS BUSCAIS JEJE
+# LOS BUSACAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
