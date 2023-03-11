@@ -456,7 +456,7 @@ async def clear_sanctions(ctx, user: discord.Member):
 
 @bot.command()
 @commands.has_role('valkyrie_admin')
-async def banned_users(ctx):
+async def banned_members(ctx):
     banned_users = []
     banned_users_id = []
     async for ban_entry in ctx.guild.bans():
@@ -536,6 +536,23 @@ async def server_info(ctx):
 
     await ctx.send(embed=embed)
 
+# user info
+@bot.command()
+async def member_info(ctx, user: discord.Member):
+    joined_date = user.joined_at.strftime('%Y-%m-%d %H:%M:%S')
+    roles = [role.name for role in user.roles]
+    presence = str(user.status)
+    activity_str = str(user.activity) if user.activity else "None"
+
+    embed = discord.Embed(title="User information", color=0x00ff00)
+    embed.add_field(name="Username", value=user.name, inline=True)
+    embed.add_field(name="Server nickname", value=user.nick, inline=True)
+    embed.add_field(name="Join date", value=joined_date, inline=False)
+    embed.add_field(name="Roles", value=", ".join(roles), inline=False)
+    embed.add_field(name="Presence status", value=presence, inline=True)
+    embed.add_field(name="Current activity", value=activity_str, inline=False)
+    await ctx.send(embed=embed)
+    
 # delete mesages
 @bot.command()
 @commands.has_role('valkyrie_admin')
@@ -548,6 +565,7 @@ async def Help(ctx):
     await ctx.send(str("When finished the bot, probably i'm going to upload a guide to: https://airilmusic.github.io"+
                     "\n\nCOMMAND LIST:"+
                     "\n```\n*server_info: displays server information"+
+                    "\n*member_info @user: displays information about a user"+
                     "\n*check_sanctions @user: see how many penalties a user has"+
                     "\n*show_badwords: to see server sancioned words list"+
                     "\n*ping: to check if the bot is working "+
@@ -563,7 +581,7 @@ async def Help(ctx):
                     "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
                     "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
                     "\n*clear_sanctions @user: to clear all sanctions of a user"+
-                    "\n*banned_users: it shows banned user list"+
+                    "\n*banned_members: it shows banned user list"+
                     "\n*unban @user: for unban a user"+
                     "\n\n*disconnect @user: for disconnect a user from a voice call"+
                     "\n*mute @user"+
@@ -575,7 +593,7 @@ async def Help(ctx):
                     "\n```"))
 
 # Easter eggs
-# LOS BUSACAIS JEJE
+# LOS BUSCAIS JEJE
 
 # Shut Down
 def signal_handler(sig, frame):
