@@ -22,6 +22,7 @@ admin_channel = "valkyrie"
 API_USER = os.getenv("SIGHTENGINE_USER")
 API_SECRET = os.getenv("SIGHTENGINE_SECRET")
 sightengine_url = "https://api.sightengine.com/1.0/check.json"
+virus_total_key = os.getenv("VIRUS_TOTAL")
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
 config = {}
@@ -200,6 +201,18 @@ async def on_message(message):
                     await message.delete()
                     await message.channel.send("You cannot send NSFW photos through a channel that is not meant for it!")
 
+    # Verificar si el mensaje contiene una URL maliciosa
+    if "http" in message.content:
+        url = message.content.split(" ")[0]
+        params = {"apikey": virus_total_key, "resource": url}
+        response = requests.get("https://www.virustotal.com/vtapi/v2/url/report", params=params)
+
+        if response.json()['response_code'] > 0:
+            admin_role = discord.utils.get(message.guild.roles, name="valkyrie_admin")
+            admin_role_id = admin_role.id
+            role_mention = f"<@&{admin_role_id}>"
+            await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful content. Please be careful when sharing and clicking on links.")
+            
     await bot.process_commands(message)
 
 @bot.event
