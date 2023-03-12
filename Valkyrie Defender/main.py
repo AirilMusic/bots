@@ -706,7 +706,7 @@ async def new_member_verification_OFF(ctx):
 # help
 @bot.command()
 async def Help(ctx):
-    await ctx.send(str("When finished the bot, probably i'm going to upload a guide to: https://airilmusic.github.io"+
+    await ctx.send(str("User guide: https://airilmusic.github.io/Valkyrie-Defender/#"+
                     "\n\nCOMMAND LIST:"+
                     "\n```\n*server_info: displays server information"+
                     "\n*member_info @user: displays information about a user"+
