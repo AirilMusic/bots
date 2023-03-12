@@ -6,6 +6,7 @@ import asyncio # pip install asyncio
 import aiohttp # pip install aiohttp
 
 import os
+import re
 import dotenv # pip install python-dotenv
 import datetime
 import json
@@ -206,7 +207,15 @@ async def on_message(message):
             pass # el archivo no es una foto
         
     # Verificar si el mensaje contiene una URL maliciosa o no
-    if "http" in message.content:
+    isGif = False
+    
+    urls = re.findall("(?P<url>https?://[^\s]+)", message.content)
+    for url in urls:
+        if "tenor.com" in url:
+            isGif = True
+            break
+    
+    if "http" in message.content and isGif == False:
         url = message.content.split(" ")[0]
         params = {"apikey": virus_total_key, "resource": url}
         response = requests.get("https://www.virustotal.com/vtapi/v2/url/report", params=params)
