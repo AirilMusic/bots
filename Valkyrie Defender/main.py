@@ -18,6 +18,7 @@ dotenv.load_dotenv() # antes que nada, mi spanglish es una maravilla, ya lo se X
 bot = commands.Bot(command_prefix='*', intents=discord.Intents.all())
 bot.session = aiohttp.ClientSession()
 admin_channel = "valkyrie"
+log_channel = "valkyrie-logs"
 
 # Configuración de Sightengine, para la deteccion de imagenes nsfw
 API_USER = os.getenv("SIGHTENGINE_USER")
@@ -115,17 +116,20 @@ async def on_message(message):
         pass
 
     # check if any badword is present in the message
-    for word in badwords:
-        if word in message.content.lower():
-            author_roles = [r.name for r in message.author.roles]
-            if 'valkyrie_admin' in author_roles:
-                break
-            await message.delete()
-            channel = discord.utils.get(message.guild.channels, name=admin_channel)
-            await channel.send(f"The message from {message.author.mention} has been deleted for containing a forbidden word in this server: {word}")
-            await warn_user(channel, message.author.id, message.guild.id, f"Message contained forbidden word: {word}", message.guild.name, message.author.name, channel.name)
-            return
-
+    try:
+        for word in badwords:
+            if word in message.content.lower():
+                author_roles = [r.name for r in message.author.roles]
+                if 'valkyrie_admin' in author_roles:
+                    break
+                await message.delete()
+                channel = discord.utils.get(message.guild.channels, name=admin_channel)
+                await channel.send(f"The message from {message.author.mention} has been deleted for containing a forbidden word in this server: {word}")
+                await warn_user(channel, message.author.id, message.guild.id, f"Message contained forbidden word: {word}", message.guild.name, message.author.name, channel.name)
+                return
+    except:
+        pass
+    
     # sensitive words check
     if message.guild:
         for word in sensitive_words:
@@ -165,34 +169,37 @@ async def on_message(message):
                 return
     
     # lock spam
-    user_id = message.author.id
-    content = message.content.lower()
-    server_id = message.guild.id
-    channel = message.channel
+    try:
+        user_id = message.author.id
+        content = message.content.lower()
+        server_id = message.guild.id
+        channel = message.channel
+        
+
+        if server_id not in message_counts:
+            message_counts[server_id] = {}
+
+        if user_id not in message_counts[server_id]:
+            message_counts[server_id][user_id] = {
+                "last_message": None,
+                "count": 0
+            }
+
+        if content == message_counts[server_id][user_id]["last_message"]:
+            message_counts[server_id][user_id]["count"] += 1
+        else:
+            message_counts[server_id][user_id]["count"] = 1
+
+        message_counts[server_id][user_id]["last_message"] = content
+
+        if message_counts[server_id][user_id]["count"] == 4:
+            await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
+
+        if message_counts[server_id][user_id]["count"] == 5:
+            await sancion(user_id, message.guild.id, "spam", channel.name, message.author)
+    except:
+        pass
     
-
-    if server_id not in message_counts:
-        message_counts[server_id] = {}
-
-    if user_id not in message_counts[server_id]:
-        message_counts[server_id][user_id] = {
-            "last_message": None,
-            "count": 0
-        }
-
-    if content == message_counts[server_id][user_id]["last_message"]:
-        message_counts[server_id][user_id]["count"] += 1
-    else:
-        message_counts[server_id][user_id]["count"] = 1
-
-    message_counts[server_id][user_id]["last_message"] = content
-
-    if message_counts[server_id][user_id]["count"] == 4:
-        await warn_user(channel, message.author.id, message.guild.id, "spam", message.guild.name, message.author.name, channel.name)
-
-    if message_counts[server_id][user_id]["count"] == 5:
-        await sancion(user_id, message.guild.id, "spam", channel.name, message.author)
-
     # Comprobar si el mensaje tiene una imagen nsfw
     if len(message.attachments) > 0:
         try:
@@ -307,7 +314,10 @@ async def print_sanction(chanel, user_id, reason, nsanc, penalization, lsancione
             admin_role_id = admin_role.id
             role_mention = f"<@&{admin_role_id}>"
             await chanel.send(f"[!] @{role_mention} The user {user_mention} has been banned because they have 5 penalties, reasons:\n```\n· {lsanciones[str(server)][str(user_id)][0]}\n· {lsanciones[str(server)][str(user_id)][1]}\n· {lsanciones[str(server)][str(user_id)][2]}\n· {lsanciones[str(server)][str(user_id)][3]}\n· {lsanciones[str(server)][str(user_id)][4]}\n```")
-
+            channel = discord.utils.get(guild.text_channels, name=log_channel)
+            embed = discord.Embed(title="Ban:", description=f"{user_mention} has baned automatically.", color=discord.Color.red())
+            await channel.send(embed=embed)
+            
 async def ban_user(user_id, guild, reason):
     if user_id is not None:
         member = await guild.fetch_member(user_id)
@@ -416,6 +426,11 @@ async def on_member_join(member):
             await member.kick(reason="The user's identity could not be verified in time.")
         else:
             await member.send("Your identity has been verified. Welcome to the server!")
+            
+    # ahora lo manda en el canal de logs
+    channel = discord.utils.get(member.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="New user:", description=f"{member.mention} has joined to the server.", color=discord.Color.green())
+    await channel.send(embed=embed)
                 
 # timeout     
 async def timeout_user(*, user_id: int, guild_id: int, until):
@@ -512,6 +527,10 @@ async def ban(ctx, user: discord.Member, reason: str):
     with open(sanciones_file_path, 'r') as sanciones_file:
         lsanciones = json.load(sanciones_file)
 
+    channel = discord.utils.get(user.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Ban:", description=f"{user.mention} has baned by {ctx.author.mention}.", color=discord.Color.red())
+    await channel.send(embed=embed)
+
     lsanciones.setdefault(server2, {}).setdefault(user_id2, [])
     lsanciones[server2][user_id2].append(reason)
     await add_to_blacklist(user_id, lsanciones)
@@ -568,6 +587,10 @@ async def clear_sanctions(ctx, user: discord.Member):
         else:
             await chanel.send(f"{user_mention} is not sanctioned!")   
     sanciones_file.close()
+    
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Sanctions cleaned:", description=f"{user.mention} 's sanctions has cleaned by {ctx.author.mention}.", color=discord.Color.green())
+    await channel.send(embed=embed)
 
 @bot.command()
 @commands.has_role('valkyrie_admin')
@@ -594,10 +617,14 @@ async def unban(ctx, user: discord.User):
         await remove_from_blacklist(str(user.id))
     except:
         ctx.send("This user is not banned!")
+        
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Unban:", description=f"{user.mention} has unbaned by {ctx.author.mention}.", color=discord.Color.green())
+    await channel.send(embed=embed)
 
 # expulsar de llamada
 @bot.command()
-@commands.has_role('valkyrie_admin')
+@commands.has_role('valkyrie_admin') ######################################### CHECKEAR FUNCIONAMIENTO
 async def disconnect(ctx, user: discord.Member):
     voice_state = user.voice
 
@@ -606,6 +633,11 @@ async def disconnect(ctx, user: discord.Member):
         await user.move_to(None)
         await voice_client.disconnect()
         await ctx.send(f'{user.display_name} has been disconnected!')
+        
+        channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+        embed = discord.Embed(title="Disconect:", description=f"{user.mention} has been disconected from voice call by {ctx.author.mention}.", color=discord.Color.red())
+        await channel.send(embed=embed)
+        
     else:
         await ctx.send(f'{user.display_name} is not on a voice call!')
         
@@ -616,11 +648,19 @@ async def mute(ctx, user: discord.Member):
     await user.edit(mute=True, deafen=False)
     await ctx.send(f"{user.mention} is muted.")
     
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Mute:", description=f"{user.mention} has been muted by {ctx.author.mention}.", color=discord.Color.red())
+    await channel.send(embed=embed)
+    
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def unmute(ctx, user: discord.Member):
     await user.edit(mute=False, deafen=False)
     await ctx.send(f"{user.mention} is unmuted, now he or she can speak in voice call!")
+    
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Unmute:", description=f"{user.mention} has been unmuted by {ctx.author.mention}.", color=discord.Color.green())
+    await channel.send(embed=embed)
     
 # deafen
 @bot.command()
@@ -629,11 +669,19 @@ async def deafen(ctx, user: discord.Member):
     await user.edit(mute=False, deafen=True)
     await ctx.send(f"{user.mention} is muted.")
     
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Deafen:", description=f"{user.mention} has been deafen by {ctx.author.mention}.", color=discord.Color.red())
+    await channel.send(embed=embed)
+    
 @bot.command()
 @commands.has_role('valkyrie_admin')
 async def undeafen(ctx, user: discord.Member):
     await user.edit(mute=False, deafen=False)
     await ctx.send(f"{user.mention} is unmuted, now he or she can speak in voice call!")
+    
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Undeafen:", description=f"{user.mention} has been undeafen by {ctx.author.mention}.", color=discord.Color.green())
+    await channel.send(embed=embed)
 
 # server info
 @bot.command()
@@ -673,6 +721,10 @@ async def member_info(ctx, user: discord.Member):
 @commands.has_role('valkyrie_admin')
 async def delete(ctx, x: int):
     await ctx.channel.purge(limit=x+1)
+    
+    channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Deletion:", description=f"{ctx.author.mention} has delete {x} messages.", color=discord.Color.yellow())
+    await channel.send(embed=embed)
 
 # turn on/off ban blacklisted users
 @bot.command()
@@ -749,8 +801,26 @@ async def Help(ctx):
                     "\n*new_member_verification_OFF: ro remove verification for new members"+
                     "\n```"))
 
+# LOG CHANNEL
+def get_log_channel(guild):
+    for channel in guild.channels:
+        if channel.name == "valkyrie-log":
+            return channel
+    return None
+
+@bot.event  ######################################################################## ESTO NO FUNCIONA BIEN, LO TENGO QUE ARREGLAR
+async def on_voice_state_update(member, before, after):
+    log_channel = get_log_channel(member.guild)
+    if log_channel:
+        if before.channel != after.channel:
+            if before.channel:
+                await log_channel.send(f"{member.name} has exit from the voice channel {before.channel.name}.")
+            if after.channel:
+                await log_channel.send(f"{member.name} has joined to the voice channel {after.channel.name}.")
+
+
 # Easter eggs
-# A BUSCARLOS UWU JEJE
+# LOS BUSCAIS XD
 
 # Shut Down
 def signal_handler(sig, frame):
