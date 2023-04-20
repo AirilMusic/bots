@@ -808,19 +808,22 @@ def get_log_channel(guild):
             return channel
     return None
 
-@bot.event  ######################################################################## ESTO NO FUNCIONA BIEN, LO TENGO QUE ARREGLAR
+@bot.event
 async def on_voice_state_update(member, before, after):
-    log_channel = get_log_channel(member.guild)
-    if log_channel:
-        if before.channel != after.channel:
-            if before.channel:
-                await log_channel.send(f"{member.name} has exit from the voice channel {before.channel.name}.")
-            if after.channel:
-                await log_channel.send(f"{member.name} has joined to the voice channel {after.channel.name}.")
-
+    channel = discord.utils.get(member.guild.text_channels, name=log_channel)
+    
+    if before.channel != after.channel:
+        if before.channel:
+            channel = discord.utils.get(member.guild.text_channels, name=log_channel)
+            embed = discord.Embed(title="Disconection:", description=f"{member.mention} has exit from the voice channel {before.channel.name}.", color=discord.Color.yellow())
+            await channel.send(embed=embed)
+        if after.channel:
+            channel = discord.utils.get(member.guild.text_channels, name=log_channel)
+            embed = discord.Embed(title="Conection:", description=f"{member.mention} has join to the voice channel {after.channel.name}.", color=discord.Color.blue())
+            await channel.send(embed=embed)
 
 # Easter eggs
-# LOS BUSCAIS XD
+# LOS BUSCAIS JEJE UWU
 
 # Shut Down
 def signal_handler(sig, frame):
