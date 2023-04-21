@@ -802,12 +802,6 @@ async def Help(ctx):
                     "\n```"))
 
 # LOG CHANNEL
-def get_log_channel(guild):
-    for channel in guild.channels:
-        if channel.name == "valkyrie-log":
-            return channel
-    return None
-
 @bot.event
 async def on_voice_state_update(member, before, after):
     channel = discord.utils.get(member.guild.text_channels, name=log_channel)
@@ -822,6 +816,12 @@ async def on_voice_state_update(member, before, after):
             embed = discord.Embed(title="Conection:", description=f"{member.mention} has join to the voice channel {after.channel.name}.", color=discord.Color.blue())
             await channel.send(embed=embed)
 
+@bot.event
+async def on_member_remove(member):
+    channel = discord.utils.get(member.guild.text_channels, name=log_channel)
+    embed = discord.Embed(title="Member Leave:", description=f"{member.mention} has leave from the server.", color=discord.Color.red())
+    await channel.send(embed=embed)
+    
 # Easter eggs
 # LOS BUSCAIS JEJE UWU
 
