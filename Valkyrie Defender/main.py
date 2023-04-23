@@ -889,7 +889,7 @@ async def on_member_remove(member):
     channel = discord.utils.get(member.guild.text_channels, name=log_channel)
     embed = discord.Embed(title="Member Leave:", description=f"{member.mention} has leave from the server.", color=discord.Color.red())
     await channel.send(embed=embed)
-    
+
 # Easter eggs
 # LOS BUSCAIS JEJE UWU
 
