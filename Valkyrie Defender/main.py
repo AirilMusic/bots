@@ -59,7 +59,18 @@ def save_remember(config):
     with open(remember_file_path, 'w') as remember_file:
         json.dump(config, remember_file)
 
-remember = load_remember()
+remember_dic = load_remember()
+
+@bot.command()
+async def remember(ctx, event, *, text):
+    server_id = str(ctx.guild.id)
+    user_id = str(ctx.author.id)
+    if server_id not in remember_dic:
+        remember_dic[server_id] = {}
+    if user_id not in remember_dic[server_id]:
+        remember_dic[server_id][user_id] = {}
+    remember_dic[server_id][user_id][event] = text
+    save_remember(remember_dic)
 
 # config badwords
 @bot.command()
