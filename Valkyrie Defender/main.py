@@ -62,9 +62,9 @@ def save_remember(config):
 remember_dic = load_remember()
 
 @bot.command()
-async def remember(ctx, event, *, text):
+async def remember(ctx, user: discord.Member, event, *, text):
     server_id = str(ctx.guild.id)
-    user_id = str(ctx.author.id)
+    user_id = str(user.id)
     if server_id not in remember_dic:
         remember_dic[server_id] = {}
     if user_id not in remember_dic[server_id]:
@@ -797,6 +797,7 @@ async def Help(ctx):
     await ctx.send(str("User guide: https://airilmusic.github.io/Valkyrie-Defender/#"+
                     "\n\nCOMMAND LIST:"+
                     "\n```\n*server_info: displays server information"+
+                    "\n*remember @user event text: remember to a user, something when something is done, events: conect, disconect..."+
                     "\n*member_info @user: displays information about a user"+
                     "\n*check_sanctions @user: see how many penalties a user has"+
                     "\n*show_badwords: to see server sancioned words list"+
@@ -828,20 +829,60 @@ async def Help(ctx):
                     "\n*new_member_verification_OFF: ro remove verification for new members"+
                     "\n```"))
 
-# LOG CHANNEL
+# LOG CHANNEL + alertas
 @bot.event
 async def on_voice_state_update(member, before, after):
-    channel = discord.utils.get(member.guild.text_channels, name=log_channel)
-    
+    remember_dic = load_remember()
     if before.channel != after.channel:
         if before.channel:
             channel = discord.utils.get(member.guild.text_channels, name=log_channel)
             embed = discord.Embed(title="Disconection:", description=f"{member.mention} has exit from the voice channel {before.channel.name}.", color=discord.Color.yellow())
             await channel.send(embed=embed)
+            
+            user_id = str(member.id)
+            server_id = str(member.guild.id)
+            if server_id in remember_dic:
+                if user_id in remember_dic[server_id]:
+                    events = remember_dic[server_id][user_id]
+                    events_to_remove = []
+                    for event, text in events.items():
+                        if event == "disconnect" or event == "disconect":
+                            events_to_remove.append(event)
+                            user = await bot.fetch_user(user_id)
+                            await user.send("Remember:")
+                            await user.send(text)
+                    for event in events_to_remove:
+                        del events[event]
+                    if not events:
+                        del remember_dic[server_id][user_id]
+                if not remember_dic[server_id]:
+                    del remember_dic[server_id]
+                save_remember(remember_dic)
+                                
         if after.channel:
             channel = discord.utils.get(member.guild.text_channels, name=log_channel)
-            embed = discord.Embed(title="Conection:", description=f"{member.mention} has join to the voice channel {after.channel.name}.", color=discord.Color.blue())
+            embed = discord.Embed(title="Connection:", description=f"{member.mention} has joined the voice channel {after.channel.name}.", color=discord.Color.blue())
             await channel.send(embed=embed)
+            
+            user_id = str(member.id)
+            server_id = str(member.guild.id)
+            if server_id in remember_dic:
+                if user_id in remember_dic[server_id]:
+                    events = remember_dic[server_id][user_id]
+                    events_to_remove = []
+                    for event, text in events.items():
+                        if event == "connect" or event == "conect":
+                            events_to_remove.append(event)
+                            user = await bot.fetch_user(user_id)
+                            await user.send("Remember:")
+                            await user.send(text)
+                    for event in events_to_remove:
+                        del events[event]
+                    if not events:
+                        del remember_dic[server_id][user_id]
+                if not remember_dic[server_id]:
+                    del remember_dic[server_id]
+                save_remember(remember_dic)
 
 @bot.event
 async def on_member_remove(member):
