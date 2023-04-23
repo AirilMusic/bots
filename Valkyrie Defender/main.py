@@ -45,6 +45,22 @@ def save_config(config):
 
 config = load_config()
 
+# recordatorios
+def load_remember():
+    remember_file_path = os.path.join(script_directory, 'remember.txt')
+    if not os.path.exists(remember_file_path):
+        with open(remember_file_path, 'w') as f:
+            json.dump({}, f)
+    with open(remember_file_path, 'r') as remember_file:
+        return json.load(remember_file)
+
+def save_remember(config):
+    remember_file_path = os.path.join(script_directory, 'remember.txt')
+    with open(remember_file_path, 'w') as remember_file:
+        json.dump(config, remember_file)
+
+remember = load_remember()
+
 # config badwords
 @bot.command()
 async def show_badwords(ctx):
