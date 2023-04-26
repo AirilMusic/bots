@@ -1,4 +1,4 @@
-import discord # pip install discord
+    import discord # pip install discord
 from discord.ext import commands
 
 import signal
@@ -800,6 +800,18 @@ async def new_member_verification_OFF(ctx):
     save_config(config)
     await ctx.send(f"Automatic banning has been disabled for new blacklisted users!")
 
+# message / ticket / eso, lo que sea, no se XD
+@bot.command()
+async def message(ctx, *, text):
+    user = ctx.author
+    server = ctx.guild.name
+    date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    embed = discord.Embed(title='Message', description=text)
+    embed.set_author(name=f'{user.name}#{user.discriminator}')
+    embed.set_footer(text=f'{server} | {date}')
+    recipient = await bot.fetch_user(666360540041445396)
+    await recipient.send(embed=embed)
+
 # help
 @bot.command()
 async def Help(ctx):
@@ -812,6 +824,7 @@ async def Help(ctx):
                     "\n*check_sanctions @user: see how many penalties a user has"+
                     "\n*show_badwords: to see server sancioned words list"+
                     "\n*ping: to check if the bot is working "+
+                    "\n*message text: to report bugs, send ideas... (contact the creator)"+
                     "\n\nSANCTIONS:"+
                     "\n    1 --> An hour of timeout"+
                     "\n    2 --> A day of timeout"+
