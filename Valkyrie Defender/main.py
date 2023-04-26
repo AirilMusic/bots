@@ -445,8 +445,7 @@ async def on_member_join(member):
     server_id = str(member.guild.id)
     if config[server_id]["user_verification"]:
         await member.send("Welcome to the server. To verify your identity, type the command *verify")
-        try:
-            # da 60 segundos para responder
+        try: # da 60 segundos para responder
             verification_command = await bot.wait_for('message', timeout=60.0, check=lambda message: message.author == member and message.content == '*verify')
         except asyncio.TimeoutError:
             await member.send("You did not verify your identity in time. Please try joining the server later!")
@@ -509,7 +508,17 @@ async def warn_user(ctx, user_id, server_id, reason, server, user, chanel):
 @bot.command()
 async def ping(ctx):
     await ctx.send("pong!")
-    
+
+# Bot info
+@bot.command()
+async def bot_info(ctx):
+    embed = discord.Embed(title="Valkyrie Defender", description="This bot is made to improve the discord server security. More info in: https://airilmusic.github.io/Valkyrie-Defender/#", color=discord.Color.blue())
+    embed.add_field(name="Servers", value=str(len(bot.guilds)))
+    embed.add_field(name="Users:", value=str(len(set(bot.get_all_members()))))
+    embed.add_field(name="Version", value="1.0.0")
+    embed.add_field(name="Made by", value="Airil / Ainhoa")
+    await ctx.send(embed=embed)
+
 # sanciones
 @bot.command()
 @commands.has_role('valkyrie_admin')
@@ -797,7 +806,8 @@ async def Help(ctx):
     await ctx.send(str("User guide: https://airilmusic.github.io/Valkyrie-Defender/#"+
                     "\n\nCOMMAND LIST:"+
                     "\n```\n*server_info: displays server information"+
-                    "\n*remember @user event text: remember to a user, something when something is done, events: conect, disconect..."+
+                    "\n*bot_info: displays information about the bot"+
+                    "\n*remember @user event text: remember to a user, something when something is done, events: conect, disconect"+
                     "\n*member_info @user: displays information about a user"+
                     "\n*check_sanctions @user: see how many penalties a user has"+
                     "\n*show_badwords: to see server sancioned words list"+
