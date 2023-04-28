@@ -277,7 +277,7 @@ async def on_message(message):
                 await message.channel.send(f"{role_mention}\nThe message from {message.author.mention} may contain harmful files! Please be careful when downloading files!")
         except:
             pass # el archivo no es valido
-        
+    
     await bot.process_commands(message)
 
 @bot.event
@@ -660,14 +660,10 @@ async def unban(ctx, user: discord.User):
 
 # expulsar de llamada
 @bot.command()
-@commands.has_role('valkyrie_admin') ######################################### CHECKEAR FUNCIONAMIENTO
+@commands.has_role('valkyrie_admin')
 async def disconnect(ctx, user: discord.Member):
-    voice_state = user.voice
-
-    if voice_state:
-        voice_client = await voice_state.channel.connect()
+    if user.voice:
         await user.move_to(None)
-        await voice_client.disconnect()
         await ctx.send(f'{user.display_name} has been disconnected!')
         
         channel = discord.utils.get(ctx.guild.text_channels, name=log_channel)
@@ -914,7 +910,17 @@ async def on_member_remove(member):
     await channel.send(embed=embed)
 
 # Easter eggs
-# LOS BUSCAIS JEJE UWU
+@bot.command()
+async def airil(ctx):
+    await ctx.send("awa")
+
+@bot.command()
+async def ainhoa(ctx):
+    await ctx.send("no seas puta")
+    
+@bot.command()
+async def junni(ctx):
+    await ctx.send("ikxsdfszkñlfsDijokl")
 
 # Shut Down
 def signal_handler(sig, frame):
