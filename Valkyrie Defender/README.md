@@ -1,3 +1,3 @@
 # VALKYRIE DEFENDER
 
-![[miniatura.png]]
+![](miniatura.png)
