@@ -1,3 +1,3 @@
-WORK IN PROGRESS
+# VALKYRIE DEFENDER
 
-This is a discord servers security bot.
+![[miniatura.png]]
