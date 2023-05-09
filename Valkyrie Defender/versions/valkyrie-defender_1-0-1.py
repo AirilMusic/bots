@@ -53,7 +53,11 @@ base_word_dic = {"gg":["Good game", "Buen juego / Bien jugado"],
                  "tpm":["Your fucking mother", "Tu Puta Madre"],
                  "alv":["Spanish word", "A La Verga"],
                  "kms":["Kill My Self [ironic]", "Matame [ironicamente]"],
-                 "mc":["Minecraft", "Minecraft"]}
+                 "mc":["Minecraft", "Minecraft"],
+                 "idk":["I Dont Know", "No lo sé"],
+                 "gn":["Good Night", "Buenas noches"],
+                 "gl":["Good Luck", "Buena suerte"],
+                 "gj":["Good Job", "Buen trabajo"]}
 word_dic = {}
 
 # config file
