@@ -4,7 +4,7 @@
 
 Made by: `Airi / Ainhoa  (nick and real name)`
 
-Actual version: `1.0.0`
+Current version: `1.0.1`
 
 User guide: [https://airilmusic.github.io/Valkyrie-Defender](https://airilmusic.github.io/Valkyrie-Defender/#)
 
