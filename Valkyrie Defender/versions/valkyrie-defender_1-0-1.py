@@ -36,7 +36,7 @@ base_word_dic = {"gg":["Good game", "Buen juego / Bien jugado"],
                  "lol":["Laugh Out Loud", "Risas descontroladas"], 
                  "mfw":["My Face When", "Mi cara cuando"], 
                  "mvp":["Most Value Player", "El mejor jugador de la partida"], 
-                 "nsfw":["No Safe For Work", "Contenido +18"], 
+                 "nsfw":["Not Safe For Work", "Contenido +18"], 
                  "psa":["Public Service Announcement", "Anuncio de servicio público"],
                  "smh":["Shaking My Head", "Ajitando/Moviendo mi cabeza"],
                  "tbh":["To Be Honest", "Para ser sincero"],
@@ -52,12 +52,18 @@ base_word_dic = {"gg":["Good game", "Buen juego / Bien jugado"],
                  "omg":["O My Good", "Oh dios mío / WOW"],
                  "tpm":["Your fucking mother", "Tu Puta Madre"],
                  "alv":["Spanish word", "A La Verga"],
-                 "kms":["Kill My Self [ironic]", "Matame [ironicamente]"],
+                 "kms":["Kill My Self [ironic]", "Me mato [ironicamente]"],
                  "mc":["Minecraft", "Minecraft"],
                  "idk":["I Dont Know", "No lo sé"],
                  "gn":["Good Night", "Buenas noches"],
                  "gl":["Good Luck", "Buena suerte"],
-                 "gj":["Good Job", "Buen trabajo"]}
+                 "gj":["Good Job", "Buen trabajo"],
+                 "ik":["I Know", "Ya sé"],
+                 "stfu":["Shut The Fuck Up", "Cierra la puta boca"],
+                 "ily":["I Love Your", "Te quiero"],
+                 "tqm":["I love you a lot (spanish term)", "Te Quiero Mucho"],
+                 "tid":["Disociative identity disorder", "Transtorno de Identidad Disociativa"],
+                 "did":["Disociative Identity Disorder", "Transtorno de identidad disociativa"]}
 word_dic = {}
 
 # config file
@@ -578,7 +584,7 @@ async def bot_info(ctx):
     embed = discord.Embed(title="Valkyrie Defender", description="This bot is made to improve the discord server security. More info in: https://airilmusic.github.io/Valkyrie-Defender/#", color=discord.Color.blue())
     embed.add_field(name="Servers", value=str(len(bot.guilds)))
     embed.add_field(name="Users:", value=str(len(set(bot.get_all_members()))))
-    embed.add_field(name="Version", value="1.0.0")
+    embed.add_field(name="Version", value="1.0.1")
     embed.add_field(name="Made by", value="Airil / Ainhoa")
     await ctx.send(embed=embed)
 
@@ -834,7 +840,7 @@ async def add_web(ctx, web):
 async def show_whitelisted_webs(ctx):
     web_whitelist = load_web_whitelist()
     if len(web_whitelist) > 0:
-        embed = discord.Embed(title="Whitelisted webs:", color=discord.Color.green())
+        embed = discord.Embed(title="Whitelisted webs:")
         for web in web_whitelist:
             embed.add_field(name=web, value="\u200b", inline=False)
         await ctx.channel.send(embed=embed)
@@ -865,14 +871,14 @@ async def add_word(ctx, word, *args):
     esp_meaning = meanings[3]
     word_dic[word] = [eng_meaning, esp_meaning]
     save_diccionario(word_dic)
-    await ctx.send(f"La palabra '{word}' ha sido agregada al diccionario con significado en inglés '{eng_meaning}' y significado en español '{esp_meaning}'")
+    await ctx.send(f"Word '{word}' has been added to the dictionary whith the meaning in english '{eng_meaning}' and in spanish '{esp_meaning}'")
     
 # remove word from word_dic, solo puedo ejecutar esto yo jeje uwu
 @bot.command()
 async def remove_word(ctx, word):
     if ctx.message.author.id == 666360540041445396:
         if word in word_dic:
-            word_dic.remove(word)
+            del word_dic[word]
             save_diccionario(word_dic)
             await ctx.channel.send(f"Word '{word}' has been removed from the dictionary.")
         else:
@@ -882,17 +888,30 @@ async def remove_word(ctx, word):
         
 # show the meanning of a word
 @bot.command()
-async def dictionary(ctx, word):
+async def dictionary(ctx, *args):
     word_dic = load_diccionario()
-    if word in word_dic:
-        definition = word_dic[word]
-        embed = discord.Embed(title=f"Definition of {word}", color=0x00ff00)
-        embed.add_field(name="Word", value=word, inline=False)
-        embed.add_field(name="English", value=definition[0], inline=False)
-        embed.add_field(name="Spanish", value=definition[1], inline=False)
-        await ctx.channel.send(embed=embed)
-    else:
-        await ctx.channel.send(f"Sorry, the word '{word}' is not in the dictionary.")
+    for word in args:
+        if word in word_dic:
+            definition = word_dic[word]
+            embed = discord.Embed(title=f"Definition of {word}")
+            embed.add_field(name="Word", value=word, inline=False)
+            embed.add_field(name="English", value=definition[0], inline=False)
+            embed.add_field(name="Spanish", value=definition[1], inline=False)
+            await ctx.channel.send(embed=embed)
+        else:
+            await ctx.channel.send(f"Sorry, the word '{word}' is not in the dictionary.")
+
+@bot.command()
+async def show_dictionary(ctx):
+    word_dic = load_diccionario()
+    words = list(word_dic.keys())
+    if len(words) == 0:
+        await ctx.channel.send("The dictionary is empty.")
+        return
+    embed = discord.Embed(title="Dictionary")
+    for i in range(0, len(words), 10):
+        embed.add_field(name="\u200b", value="\n".join(words[i:i+10]), inline=True)
+    await ctx.channel.send(embed=embed)
 
 # turn on/off ban blacklisted users
 @bot.command()
@@ -948,46 +967,46 @@ async def message(ctx, *, text):
 @bot.command()
 async def show_servers(ctx):
     if ctx.message.author.id == 666360540041445396:
-        embed = discord.Embed(title="Servers", color=0x00ff00)
+        embed = discord.Embed(title="Servers")
 
         for guild in bot.guilds:
-            embed.add_field(name=guild.name, value=guild.icon_url)
+            embed.add_field(name="", value=guild.name)
 
         await ctx.send(embed=embed)
 
 @bot.command()
 async def reset_blacklist(ctx):
     if ctx.message.author.id == 666360540041445396:
-        os.remove('blacklist.txt')
-        
         blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
         if not os.path.exists(blacklist_file_path):
             with open(blacklist_file_path, 'w') as f:
                 json.dump({}, f)
+                
+            f.close()
         
         await ctx.send('Blacklist has reseted!')
         
 @bot.command()
 async def reset_warns(ctx):
     if ctx.message.author.id == 666360540041445396:
-        os.remove('warns.txt')
-        
-        blacklist_file_path = os.path.join(script_directory, 'warns.txt')
-        if not os.path.exists(blacklist_file_path):
-            with open(blacklist_file_path, 'w') as f:
+        warns_file_path = os.path.join(script_directory, 'warns.txt')
+        if not os.path.exists(warns_file_path):
+            with open(warns_file_path, 'w') as f:
                 json.dump({}, f)
+                
+            f.close()
         
         await ctx.send('Warns has reseted!')
         
 @bot.command()
 async def reset_sanctions(ctx):
     if ctx.message.author.id == 666360540041445396:
-        os.remove('sanciones.txt')
-        
-        blacklist_file_path = os.path.join(script_directory, 'sanciones.txt')
-        if not os.path.exists(blacklist_file_path):
-            with open(blacklist_file_path, 'w') as f:
+        sanciones_file_path = os.path.join(script_directory, 'sanciones.txt')
+        if not os.path.exists(sanciones_file_path):
+            with open(sanciones_file_path, 'w') as f:
                 json.dump({}, f)
+                
+            f.close()
         
         await ctx.send('Sanctions has reseted!')
 
@@ -996,14 +1015,15 @@ async def reset_sanctions(ctx):
 async def Help(ctx):
     await ctx.send(str("User guide: https://airilmusic.github.io/Valkyrie-Defender/#"+
                     "\n\nCOMMAND LIST:"+
-                    "\n```\n*server_info: displays server information"+
-                    "\n*bot_info: displays information about the bot"+
+                    "\n```\n*server_info: displays server info"+
+                    "\n*bot_info: displays bot info"+
                     "\n*dictionary (word): display the meaning of a word, for example, idk, btw..."+
-                    "\n*remember @user event text: remember to a user, something when something is done, events: conect, disconect"+
-                    "\n*member_info @user: displays information about a user"+
+                    "\n*show_dictionary: displays all dictionary"+
+                    "\n*remember @user event text: remember something, events: conect, disconect"+
+                    "\n*member_info @user: displays user info"+
                     "\n*check_sanctions @user: see how many penalties a user has"+
-                    "\n*show_badwords: to see server sancioned words list"+
-                    "\n*ping: to check if the bot is working "+
+                    "\n*show_badwords: to see server forbiden words list"+
+                    "\n*ping"+
                     "\n*message text: to report bugs, send ideas... (contact the creator)"+
                     "\n\nSANCTIONS:"+
                     "\n    1 --> An hour of timeout"+
@@ -1013,19 +1033,19 @@ async def Help(ctx):
                     "\n    5 --> BAN, and this user will be added to a multiserver blacklist\n"+
                     "\nADMIN COMMANDS:"+
                     "\n*delete (num): delete last (num) messages"
-                    "\n\n*warn @user reason: this is going to warn a user, 3 warns = 1 sanction"+
-                    "\n*ban @user reason: to ban a user (only users with the rol 'valkirye_admin' can execute this command)"+ 
-                    "\n*penalize @user reason: to give one penalization to a user (only users with the rol 'valkirye_admin' can execute this command)"+
-                    "\n*clear_sanctions @user: to clear all sanctions of a user"+
+                    "\n\n*warn @user reason: warn a user, 3 warns = 1 sanction"+
+                    "\n*ban @user reason: ban a user"+ 
+                    "\n*penalize @user reason: to give one penalization to a user"+
+                    "\n*clear_sanctions @user: to clear all sanctions"+
                     "\n*banned_members: it shows banned user list"+
-                    "\n*unban @user: for unban a user"+
-                    "\n\n*disconnect @user: for disconnect a user from a voice call"+
+                    "\n*unban @user"+
+                    "\n\n*disconnect @user"+
                     "\n*mute @user"+
                     "\n*unmute @user"+
                     "\n*deafen @user"+
                     "\n*undeafen @user"+
-                    "\n\n*add_badword (word): to add a sanctioned word to the server config"+
-                    "\n*remove_badword (word): to remove a word to the sanctioned words list"+
+                    "\n\n*add_badword (word): to add a forbiden word to the server config"+
+                    "\n*remove_badword (word): to remove a word to the forbiden words list"+
                     "\n\n*show_whitelisted_webs: to view whitelisted webs"+
                     "\n*add_web (web): add web to the whitelist"+
                     "\n*remove_web (web): remove web from the whitelist"+
