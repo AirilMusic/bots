@@ -944,6 +944,53 @@ async def message(ctx, *, text):
     recipient = await bot.fetch_user(666360540041445396)
     await recipient.send(embed=embed)
 
+# bot developer commands (el de borrar words del diccionario tambien deberia esar aqui, pero me da toc XD)
+@bot.command()
+async def show_servers(ctx):
+    if ctx.message.author.id == 666360540041445396:
+        embed = discord.Embed(title="Servers", color=0x00ff00)
+
+        for guild in bot.guilds:
+            embed.add_field(name=guild.name, value=guild.icon_url)
+
+        await ctx.send(embed=embed)
+
+@bot.command()
+async def reset_blacklist(ctx):
+    if ctx.message.author.id == 666360540041445396:
+        os.remove('blacklist.txt')
+        
+        blacklist_file_path = os.path.join(script_directory, 'blacklist.txt')
+        if not os.path.exists(blacklist_file_path):
+            with open(blacklist_file_path, 'w') as f:
+                json.dump({}, f)
+        
+        await ctx.send('Blacklist has reseted!')
+        
+@bot.command()
+async def reset_warns(ctx):
+    if ctx.message.author.id == 666360540041445396:
+        os.remove('warns.txt')
+        
+        blacklist_file_path = os.path.join(script_directory, 'warns.txt')
+        if not os.path.exists(blacklist_file_path):
+            with open(blacklist_file_path, 'w') as f:
+                json.dump({}, f)
+        
+        await ctx.send('Warns has reseted!')
+        
+@bot.command()
+async def reset_sanctions(ctx):
+    if ctx.message.author.id == 666360540041445396:
+        os.remove('sanciones.txt')
+        
+        blacklist_file_path = os.path.join(script_directory, 'sanciones.txt')
+        if not os.path.exists(blacklist_file_path):
+            with open(blacklist_file_path, 'w') as f:
+                json.dump({}, f)
+        
+        await ctx.send('Sanctions has reseted!')
+
 # help
 @bot.command()
 async def Help(ctx):
