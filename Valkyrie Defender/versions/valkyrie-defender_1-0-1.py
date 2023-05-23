@@ -198,7 +198,10 @@ def is_nsfw(image_url):
 @bot.event
 async def on_message(message):
     config = load_config()
-    if message.author.bot or 'exception' in [r.name for r in message.author.roles]:
+    if message.author.bot:
+        return
+    if 'exception' in [r.name for r in message.author.roles]:
+        await bot.process_commands(message)
         return
     
     # get badwords list for the current server
